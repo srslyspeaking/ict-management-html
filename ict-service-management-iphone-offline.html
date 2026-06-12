@@ -548,14 +548,27 @@
 
     /* iPhone offline tuning */
     @media (max-width: 860px) {
-      body { background: #f7f8f4; }
-      .shell { display: block; }
+      html {
+        scroll-padding-top: 58px;
+      }
+      body {
+        background: #f7f8f4;
+        font-size: 16px;
+      }
+      .shell {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
       aside {
+        order: 3;
         position: static;
         height: auto;
         border-right: 0;
-        border-bottom: 1px solid var(--line);
+        border-top: 1px solid var(--line);
+        border-bottom: 0;
         padding: 12px;
+        background: #fbfbf7;
       }
       .brand { margin-bottom: 10px; }
       .brand h1 { font-size: 18px; }
@@ -573,21 +586,37 @@
         display: block;
       }
       .chapter-grid button span { display: block; }
-      main { padding: 12px; }
+      main {
+        order: 1;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
       .stats {
+        order: 4;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
-        margin-bottom: 10px;
+        margin: 0;
       }
       .stat { padding: 10px; }
       .stat strong { font-size: 18px; }
       .stat span { font-size: 11px; }
       .tabs {
+        order: 1;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgba(247, 248, 244, 0.96);
+        border-bottom: 1px solid var(--line);
         gap: 6px;
         overflow-x: auto;
         flex-wrap: nowrap;
-        padding-bottom: 4px;
-        margin-bottom: 10px;
+        padding: 6px 0 8px;
+        margin: 0 -10px 0;
+        padding-left: 10px;
+        padding-right: 10px;
+        -webkit-overflow-scrolling: touch;
       }
       .tabs button {
         flex: 0 0 auto;
@@ -595,13 +624,16 @@
         padding: 8px 10px;
         white-space: nowrap;
       }
+      #cardsView, #quizView, #clozeView, #mistakesView, #mapView {
+        order: 2;
+      }
       .quiz {
         padding: 14px;
         gap: 12px;
         box-shadow: 0 8px 22px rgba(20, 28, 36, 0.10);
       }
       .quiz h2 {
-        font-size: 19px;
+        font-size: 20px;
         line-height: 1.35;
       }
       .meta { gap: 6px; }
@@ -620,6 +652,14 @@
       .row { gap: 6px; }
       #prevQuiz, #prevCloze, #prevCard { width: 44px; }
       #nextQuiz, #quizMap, #nextCloze { flex: 1 1 130px; }
+      #quizView .row:last-child {
+        position: sticky;
+        bottom: 0;
+        background: rgba(247, 248, 244, 0.96);
+        border-top: 1px solid var(--line);
+        margin: 0 -14px -14px;
+        padding: 8px 14px 10px;
+      }
       .flash-wrap { grid-template-columns: 1fr; }
       .side-list { display: none; }
       .flash-card { min-height: 300px; padding: 16px; }
