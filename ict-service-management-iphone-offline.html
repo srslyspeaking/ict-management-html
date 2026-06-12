@@ -449,6 +449,77 @@
       gap: 8px;
     }
 
+    .ai-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .ai-box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 14px;
+    }
+
+    .ai-box h3 {
+      margin: 0 0 10px;
+      font-size: 17px;
+    }
+
+    .ai-controls {
+      display: grid;
+      gap: 10px;
+    }
+
+    .ai-controls input,
+    .ai-controls select,
+    .ai-controls textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 11px;
+      font: inherit;
+      background: #fff;
+    }
+
+    .ai-controls textarea {
+      min-height: 78px;
+      resize: vertical;
+    }
+
+    .ai-output {
+      white-space: pre-wrap;
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .ai-status {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    .mini-table th,
+    .mini-table td {
+      border-bottom: 1px solid var(--line);
+      padding: 7px 4px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .mini-table th {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -722,9 +793,10 @@
         white-space: nowrap;
         font-size: 14px;
       }
-      #cardsView, #quizView, #clozeView, #mistakesView, #mapView {
+      #cardsView, #quizView, #clozeView, #mistakesView, #aiView, #mapView {
         order: 2;
       }
+      .ai-grid { grid-template-columns: 1fr; }
       .quiz {
         padding: 14px;
         gap: 12px;
@@ -836,6 +908,7 @@
         <button data-view="quiz">选择题</button>
         <button data-view="cloze">填空题</button>
         <button data-view="mistakes">错题集</button>
+        <button data-view="ai">AI复盘</button>
         <button data-view="map">知识地图</button>
       </div>
 
@@ -908,6 +981,35 @@
             <button id="clearMistakes">清空错题集 / Clear</button>
           </div>
           <div id="mistakeList"></div>
+        </article>
+      </section>
+
+      <section id="aiView" hidden>
+        <article class="panel mistakes">
+          <div class="ai-grid">
+            <div class="ai-box">
+              <h3>本地薄弱点 / Local diagnosis</h3>
+              <div id="localDiagnosis" class="ai-output"></div>
+            </div>
+            <div class="ai-box">
+              <h3>GPT 复盘 / AI review</h3>
+              <div class="ai-controls">
+                <input id="apiKey" type="password" autocomplete="off" placeholder="临时粘贴 OpenAI API key，不会写进 HTML">
+                <select id="aiModel">
+                  <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                  <option value="gpt-4o-mini">gpt-4o-mini</option>
+                </select>
+                <textarea id="aiNotes" placeholder="可选：比如“明天考试，重点看计算题和 Chapter 20/21 case”。"></textarea>
+                <button id="runAiReview" class="primary">生成薄弱点大纲和错题讲解</button>
+                <button id="copyReviewData">复制复盘数据</button>
+                <div id="aiStatus" class="ai-status">API key 只保存在当前输入框；部署到 GitHub 时不要把 key 写进源码。</div>
+              </div>
+            </div>
+          </div>
+          <div class="ai-box">
+            <h3>输出 / Output</h3>
+            <div id="aiOutput" class="ai-output">先做一些题，然后点“生成薄弱点大纲和错题讲解”。不用 API 也可以先看上面的本地薄弱点。</div>
+          </div>
         </article>
       </section>
 
@@ -4760,7 +4862,7 @@
         }
         btn.textContent = `${String.fromCharCode(65 + displayIndex)}. ${item.o[realIndex]}`;
         btn.onclick = () => {
-          state.quiz[item.id] = {choice: realIndex, correct: realIndex === item.a, wrong: realIndex !== item.a};
+          state.quiz[item.id] = {choice: realIndex, correct: realIndex === item.a, wrong: realIndex !== item.a, ts: new Date().toISOString()};
           if ($("mode").value === "unseen") state.retain.quiz = item.id;
           save();
           render();
@@ -4826,7 +4928,7 @@
       const normalized = normalizeAnswer(answer);
       const accepted = item.answers.map(normalizeAnswer);
       const correct = reveal ? false : accepted.includes(normalized);
-      state.cloze[item.id] = {answer, correct, wrong: !correct, revealed: reveal};
+      state.cloze[item.id] = {answer, correct, wrong: !correct, revealed: reveal, ts: new Date().toISOString()};
       if ($("mode").value === "unseen") state.retain.cloze = item.id;
       save();
       render();
@@ -4876,6 +4978,209 @@
           };
         });
       return [...cardMistakes, ...quizMistakes, ...clozeMistakes];
+    }
+
+    function reviewDataset() {
+      const quizItems = allItems(quiz, "quiz");
+      const clozeItems = allItems(cloze, "cloze");
+      const cardItems = allItems(cards, "card");
+      const chapterStats = {};
+      const topicStats = {};
+      const ensure = (bucket, key, label = key) => {
+        bucket[key] ||= {label, total: 0, done: 0, correct: 0, wrong: 0, weakCards: 0};
+        return bucket[key];
+      };
+      quizItems.forEach(item => {
+        const record = state.quiz[item.id];
+        const chapter = ensure(chapterStats, item.c, `Chapter ${item.c}`);
+        const topic = ensure(topicStats, `${item.c} · ${item.t}`);
+        chapter.total += 1;
+        topic.total += 1;
+        if (record) {
+          chapter.done += 1;
+          topic.done += 1;
+          if (record.correct) {
+            chapter.correct += 1;
+            topic.correct += 1;
+          } else {
+            chapter.wrong += 1;
+            topic.wrong += 1;
+          }
+        }
+      });
+      clozeItems.forEach(item => {
+        const record = state.cloze[item.id];
+        const chapter = ensure(chapterStats, item.c, `Chapter ${item.c}`);
+        const topic = ensure(topicStats, `${item.c} · ${item.t}`);
+        chapter.total += 1;
+        topic.total += 1;
+        if (record) {
+          chapter.done += 1;
+          topic.done += 1;
+          if (record.correct) {
+            chapter.correct += 1;
+            topic.correct += 1;
+          } else {
+            chapter.wrong += 1;
+            topic.wrong += 1;
+          }
+        }
+      });
+      cardItems.forEach(item => {
+        const chapter = ensure(chapterStats, item.c, `Chapter ${item.c}`);
+        const topic = ensure(topicStats, `${item.c} · ${item.t}`);
+        if (state.weak[item.id]) {
+          chapter.weakCards += 1;
+          topic.weakCards += 1;
+        }
+      });
+      const score = row => {
+        const accuracyPenalty = row.done ? (1 - row.correct / row.done) * 100 : 30;
+        const wrongWeight = row.wrong * 12;
+        const weakWeight = row.weakCards * 8;
+        const coveragePenalty = row.total ? (1 - row.done / row.total) * 15 : 0;
+        return accuracyPenalty + wrongWeight + weakWeight + coveragePenalty;
+      };
+      const formatRows = rows => rows
+        .map(row => ({...row, accuracy: row.done ? Math.round(row.correct / row.done * 100) : null, priority: Math.round(score(row))}))
+        .sort((a, b) => b.priority - a.priority);
+      const mistakes = collectMistakes().slice(0, 40).map(entry => ({
+        type: entry.label,
+        chapter: entry.item.c,
+        topic: entry.item.t,
+        question: entry.item.q,
+        explanation: entry.item.e || entry.item.a || "",
+        source: sourceFor(entry.item, entry.type)
+      }));
+      return {
+        generatedAt: new Date().toLocaleString(),
+        overall: {
+          quizDone: Object.keys(state.quiz).length,
+          quizWrong: Object.values(state.quiz).filter(x => x.wrong).length,
+          clozeDone: Object.keys(state.cloze).length,
+          clozeWrong: Object.values(state.cloze).filter(x => x.wrong).length,
+          weakCards: Object.keys(state.weak).length,
+          knownCards: Object.keys(state.known).length
+        },
+        chapters: formatRows(Object.values(chapterStats)),
+        topics: formatRows(Object.values(topicStats)).slice(0, 18),
+        mistakes
+      };
+    }
+
+    function localReviewText(data = reviewDataset()) {
+      const overall = data.overall;
+      const weakChapters = data.chapters.filter(x => x.done || x.weakCards).slice(0, 6);
+      const weakTopics = data.topics.filter(x => x.done || x.weakCards).slice(0, 8);
+      const lines = [];
+      lines.push(`记录时间：${data.generatedAt}`);
+      lines.push(`选择题：${overall.quizDone} 已做，${overall.quizWrong} 错；填空题：${overall.clozeDone} 已做，${overall.clozeWrong} 错；不熟卡片：${overall.weakCards}。`);
+      lines.push("");
+      lines.push("优先复习章节：");
+      if (!weakChapters.length) {
+        lines.push("- 还没有足够记录。先做一轮选择题和填空题。");
+      } else {
+        weakChapters.forEach(row => {
+          const accuracy = row.accuracy === null ? "未统计" : `${row.accuracy}%`;
+          lines.push(`- ${row.label}: 正确率 ${accuracy}, 错 ${row.wrong}, 不熟卡 ${row.weakCards}, 优先级 ${row.priority}`);
+        });
+      }
+      lines.push("");
+      lines.push("最需要补的主题：");
+      if (!weakTopics.length) {
+        lines.push("- 暂无主题数据。");
+      } else {
+        weakTopics.forEach(row => {
+          const accuracy = row.accuracy === null ? "未统计" : `${row.accuracy}%`;
+          lines.push(`- ${row.label}: 正确率 ${accuracy}, 错 ${row.wrong}, 不熟卡 ${row.weakCards}`);
+        });
+      }
+      lines.push("");
+      lines.push("错题讲解入口：");
+      if (!data.mistakes.length) {
+        lines.push("- 当前没有错题；可以切到“只练难题”或“只练计算选择题”制造诊断样本。");
+      } else {
+        data.mistakes.slice(0, 6).forEach((item, index) => {
+          lines.push(`${index + 1}. Ch ${item.chapter} · ${item.topic}: ${item.question}`);
+          lines.push(`   复盘点：${item.explanation}`);
+        });
+      }
+      return lines.join("\n");
+    }
+
+    function renderAiReview() {
+      $("localDiagnosis").textContent = localReviewText();
+    }
+
+    function reviewPrompt(data) {
+      return [
+        "You are a bilingual ICT Service Management exam tutor. The student studies for an English exam but prefers Chinese explanations.",
+        "Analyze the student's local quiz records. Produce:",
+        "1. Weakness diagnosis by chapter/topic.",
+        "2. A targeted review outline for the next study session.",
+        "3. Detailed explanations for the mistakes, in Chinese with key English terms preserved.",
+        "4. A short drill plan: what to do first, second, third.",
+        "Be practical and exam-oriented. Do not invent facts outside the provided course data.",
+        "",
+        `Student note: ${$("aiNotes").value.trim() || "(none)"}`,
+        "",
+        "Local progress data:",
+        JSON.stringify(data, null, 2)
+      ].join("\n");
+    }
+
+    async function runAiReview() {
+      const apiKey = $("apiKey").value.trim();
+      const data = reviewDataset();
+      $("localDiagnosis").textContent = localReviewText(data);
+      if (!apiKey) {
+        $("aiOutput").textContent = `${localReviewText(data)}\n\n要生成更细的 GPT 讲解，请临时粘贴 API key。注意：不要把 key 写进 GitHub 源码。`;
+        $("aiStatus").textContent = "未填写 API key，已生成本地复盘。";
+        return;
+      }
+      $("aiStatus").textContent = "正在请求 GPT 生成复盘...";
+      $("runAiReview").disabled = true;
+      try {
+        const response = await fetch("https://api.openai.com/v1/responses", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: $("aiModel").value,
+            input: reviewPrompt(data),
+            temperature: 0.2
+          })
+        });
+        const json = await response.json();
+        if (!response.ok) {
+          throw new Error(json.error?.message || `HTTP ${response.status}`);
+        }
+        const text = json.output_text || (json.output || [])
+          .flatMap(item => item.content || [])
+          .map(part => part.text || "")
+          .join("\n")
+          .trim();
+        $("aiOutput").textContent = text || "GPT 返回为空；请换模型或稍后重试。";
+        $("aiStatus").textContent = "复盘已生成。";
+      } catch (error) {
+        $("aiOutput").textContent = `${localReviewText(data)}\n\nGPT 请求失败：${error.message}\n\n可以先用上面的本地复盘继续学。`;
+        $("aiStatus").textContent = "GPT 请求失败。";
+      } finally {
+        $("runAiReview").disabled = false;
+      }
+    }
+
+    async function copyReviewData() {
+      const text = reviewPrompt(reviewDataset());
+      try {
+        await navigator.clipboard.writeText(text);
+        $("aiStatus").textContent = "复盘数据已复制，可以粘贴到 ChatGPT。";
+      } catch {
+        $("aiOutput").textContent = text;
+        $("aiStatus").textContent = "浏览器不允许复制，已把复盘数据显示在输出区。";
+      }
     }
 
     function jumpToMistake(type, id) {
@@ -5013,6 +5318,7 @@
       $("quizView").hidden = state.view !== "quiz";
       $("clozeView").hidden = state.view !== "cloze";
       $("mistakesView").hidden = state.view !== "mistakes";
+      $("aiView").hidden = state.view !== "ai";
       $("mapView").hidden = state.view !== "map";
     }
 
@@ -5024,6 +5330,7 @@
       renderQuiz();
       renderCloze();
       renderMistakes();
+      renderAiReview();
       renderMap();
       save();
     }
@@ -5142,6 +5449,8 @@
       });
       render();
     };
+    $("runAiReview").onclick = runAiReview;
+    $("copyReviewData").onclick = copyReviewData;
     $("reset").onclick = () => {
       if (!confirm("确定清空本地复习进度吗？题库不会删除。")) return;
       localStorage.removeItem(storeKey);
