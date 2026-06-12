@@ -21,6 +21,10 @@
     }
 
     * { box-sizing: border-box; }
+    html {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
     body {
       margin: 0;
       color: var(--ink);
@@ -41,6 +45,7 @@
       border-radius: 8px;
       padding: 8px 12px;
       cursor: pointer;
+      line-height: 1.2;
     }
 
     button:hover { border-color: #9aa7b5; }
@@ -581,15 +586,36 @@
       .chapter-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        max-height: 148px;
+        gap: 8px;
+        max-height: 228px;
         overflow: auto;
       }
       .chapter-grid button {
-        min-height: 42px;
-        padding: 7px 8px;
-        display: block;
+        min-height: 66px;
+        padding: 9px 10px;
+        display: grid;
+        align-content: center;
+        gap: 4px;
+        overflow: hidden;
       }
-      .chapter-grid button span { display: block; }
+      .chapter-grid button b {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 17px;
+        line-height: 1.12;
+      }
+      .chapter-grid button span {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px;
+        line-height: 1.15;
+      }
       main {
         order: 1;
         padding: 10px;
@@ -627,6 +653,7 @@
         min-height: 38px;
         padding: 8px 10px;
         white-space: nowrap;
+        font-size: 14px;
       }
       #cardsView, #quizView, #clozeView, #mistakesView, #mapView {
         order: 2;
