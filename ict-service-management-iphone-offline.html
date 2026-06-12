@@ -4120,6 +4120,7 @@
     }
 
     const state = loadState();
+    const hasSavedQuizIndex = Number.isInteger(state.quizIndex);
     state.known ||= {};
     state.weak ||= {};
     state.quiz ||= {};
@@ -4127,7 +4128,7 @@
     state.chapter ||= "all";
     state.view = "quiz";
     state.cardIndex ||= 0;
-    state.quizIndex ||= 0;
+    state.quizIndex = hasSavedQuizIndex ? state.quizIndex : 0;
     state.clozeIndex ||= 0;
     state.shuffleSeed ||= 0;
     state.mode ||= "all";
@@ -4262,9 +4263,14 @@
 
     function resetPositions() {
       state.cardIndex = 0;
-      state.quizIndex = 0;
+      state.quizIndex = firstUnansweredIndex(filtered(quiz, "quiz"), "quiz");
       state.clozeIndex = 0;
       state.showAnswer = false;
+    }
+
+    function firstUnansweredIndex(list, type) {
+      const index = list.findIndex(item => !state[type]?.[item.id]);
+      return index === -1 ? 0 : index;
     }
 
     function seeded(text) {
@@ -4423,9 +4429,7 @@
     function jumpCurrentQuizToMap() {
       const item = currentQuizItem();
       if (!item) return;
-      $("search").value = "";
       state.mapFocus = mapTargetFor(item);
-      state.chapter = item.c;
       state.view = "map";
       save();
       render();
@@ -4822,8 +4826,8 @@
     };
     $("mode").onchange = () => {
       state.mode = $("mode").value;
-      resetPositions();
       if ($("mode").value === "calc") state.view = "quiz";
+      resetPositions();
       render();
     };
     $("showAnswer").onclick = () => {
@@ -4919,6 +4923,9 @@
       location.reload();
     };
 
+    if (!hasSavedQuizIndex) {
+      state.quizIndex = firstUnansweredIndex(filtered(quiz, "quiz"), "quiz");
+    }
     render();
   </script>
 </body>
