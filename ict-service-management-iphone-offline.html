@@ -601,9 +601,135 @@
       background: #fbfcfb;
     }
 
+    .essay-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .essay-answer {
+      width: 100%;
+      min-height: 180px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      font: inherit;
+      line-height: 1.5;
+      resize: vertical;
+      background: #fff;
+    }
+
+    .essay-rubric {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      min-width: 76px;
+      min-height: 42px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: #ecfdf5;
+      border: 1px solid #99f6e4;
+      color: #0f766e;
+      font-weight: 800;
+      font-size: 20px;
+      font-variant-numeric: tabular-nums;
+    }
+
     .ai-status {
       color: var(--muted);
       font-size: 13px;
+    }
+
+    .api-fab {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 40;
+      width: 54px;
+      height: 54px;
+      min-height: 54px;
+      border-radius: 999px;
+      border-color: var(--brand);
+      background: var(--brand);
+      color: #fff;
+      font-weight: 900;
+      box-shadow: var(--shadow);
+    }
+
+    .api-fab.active {
+      background: var(--brand-2);
+      border-color: var(--brand-2);
+    }
+
+    .api-drawer {
+      position: fixed;
+      right: 18px;
+      bottom: 82px;
+      z-index: 39;
+      width: min(360px, calc(100vw - 28px));
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 10px;
+    }
+
+    .api-drawer[hidden] {
+      display: none;
+    }
+
+    .api-drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .api-drawer-head strong {
+      font-size: 15px;
+    }
+
+    .api-drawer-head span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    .api-drawer input,
+    .api-drawer select {
+      width: 100%;
+    }
+
+    .api-drawer-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .api-drawer-actions button {
+      min-width: 0;
+      white-space: normal;
+    }
+
+    .api-close {
+      width: 34px;
+      min-height: 34px;
+      padding: 0;
+      border-radius: 999px;
+      flex: 0 0 auto;
     }
 
     .mini-table {
@@ -899,10 +1025,12 @@
         white-space: nowrap;
         font-size: 14px;
       }
-      #cardsView, #quizView, #clozeView, #mistakesView, #aiView, #mapView {
+      #cardsView, #quizView, #essayView, #clozeView, #mistakesView, #aiView, #mapView {
         order: 2;
       }
       .ai-grid { grid-template-columns: 1fr; }
+      .essay-layout { grid-template-columns: 1fr; }
+      .essay-answer { min-height: 150px; }
       .quiz {
         padding: 14px;
         gap: 12px;
@@ -935,6 +1063,24 @@
       }
       .term-head h3 { font-size: 17px; }
       .term-body { font-size: 13px; }
+      .api-fab {
+        right: 14px;
+        bottom: calc(14px + env(safe-area-inset-bottom));
+        width: 50px;
+        height: 50px;
+        min-height: 50px;
+      }
+      .api-drawer {
+        right: 10px;
+        left: 10px;
+        bottom: calc(76px + env(safe-area-inset-bottom));
+        width: auto;
+        padding: 12px;
+        border-radius: 12px;
+      }
+      .api-drawer-actions {
+        grid-template-columns: 1fr;
+      }
       .row { gap: 6px; }
       #prevQuiz, #prevCloze, #prevCard { width: 44px; }
       #nextQuiz, #quizMap, #nextCloze { flex: 1 1 130px; }
@@ -1012,6 +1158,7 @@
       <div class="tabs">
         <button class="active" data-view="cards">Flashcards</button>
         <button data-view="quiz">选择题</button>
+        <button data-view="essay">大题</button>
         <button data-view="cloze">填空题</button>
         <button data-view="mistakes">错题集</button>
         <button data-view="ai">AI复盘</button>
@@ -1054,6 +1201,42 @@
             <button id="prevQuiz" class="icon" title="上一题">‹</button>
             <button id="quizMap">知识地图 / Map</button>
             <button id="nextQuiz" class="primary">下一题</button>
+          </div>
+        </article>
+      </section>
+
+      <section id="essayView" hidden>
+        <article class="panel quiz">
+          <div class="essay-layout">
+            <div>
+              <div id="essayMeta" class="meta"></div>
+              <h2 id="essayQuestion"></h2>
+              <textarea id="essayAnswer" class="essay-answer" placeholder="用英文作答；可以先列 bullet points，再整理成完整答案。"></textarea>
+              <div class="row" style="margin-top:12px">
+                <button id="gradeEssay" class="primary">AI 评分 / Grade</button>
+                <button id="showEssayModel">参考答案 / Model</button>
+              </div>
+              <div id="essayFeedback" class="explain" hidden></div>
+              <div id="essaySource" class="source-note"></div>
+              <div class="progress"><div id="essayProgress" class="bar"></div></div>
+              <div class="row">
+                <button id="prevEssay" class="icon" title="上一题">‹</button>
+                <button id="nextEssay" class="primary">下一道大题</button>
+              </div>
+            </div>
+            <div class="ai-box">
+              <h3>评分设置 / Grading</h3>
+              <div class="ai-controls">
+                <input id="essayApiKey" type="password" autocomplete="off" placeholder="OpenAI API key，临时输入，不写进文件">
+                <select id="essayModel">
+                  <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                  <option value="gpt-4o-mini">gpt-4o-mini</option>
+                </select>
+                <div id="essayScore" class="score-badge">未评分</div>
+                <div id="essayRubric" class="essay-rubric"></div>
+                <div id="essayStatus" class="ai-status">大题来自书、练习、Stuvia review 和 case 题；适合练英文考试表达。</div>
+              </div>
+            </div>
           </div>
         </article>
       </section>
@@ -1139,6 +1322,29 @@
     </div>
     <div id="termBody" class="term-body"></div>
     <div id="termTip" class="term-tip"></div>
+  </div>
+
+  <button id="apiFab" class="api-fab" type="button" aria-expanded="false" aria-controls="apiDrawer" title="AI 设置">AI</button>
+  <div id="apiDrawer" class="api-drawer" hidden>
+    <div class="api-drawer-head">
+      <div>
+        <strong>AI API 注入</strong>
+        <span>临时填写，只同步到本页输入框，不写进文件</span>
+      </div>
+      <button id="apiClose" class="api-close" type="button" aria-label="关闭 AI 设置">×</button>
+    </div>
+    <input id="globalApiKey" type="password" autocomplete="off" placeholder="OpenAI API key">
+    <select id="globalModel">
+      <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+      <option value="gpt-4o-mini">gpt-4o-mini</option>
+    </select>
+    <div class="api-drawer-actions">
+      <button id="apiGoReview" class="primary" type="button">打开 AI 复盘</button>
+      <button id="apiRunReview" type="button">直接生成复盘</button>
+      <button id="apiGoEssay" type="button">打开大题区</button>
+      <button id="apiGradeEssay" type="button">评分当前大题</button>
+    </div>
+    <div id="apiDrawerStatus" class="ai-status">建议只在自己设备上临时粘贴 key；上传 GitHub 前不要把 key 写入源码。</div>
   </div>
 
   <script>
@@ -3486,11 +3692,11 @@
       {c:"3", t:"Practical Domains", q:"EN: The payroll software itself belongs to which domain?", o:["Application","Data","Infrastructure","Governance"], a:0, e:"Software that processes data for business use is the Application domain."},
       {c:"3", t:"Practical Domains", q:"EN: Servers, network, and storage supporting payroll belong to which domain?", o:["Infrastructure","Application","Business process","Customer focus"], a:0, e:"Hardware/network/storage platforms are Infrastructure."},
       {c:"3", t:"Practical Governance", q:"EN: Deciding which IT investments should be prioritized for business value is mainly...", o:["IT governance","Incident handling","Data entry","Resource item labeling"], a:0, e:"Governance sets direction, priorities, responsibilities, and monitoring."},
-      {c:"21", t:"Hard Case", q:"EN: A bank says: 'Our business strategy is fixed: improve customer trust and digital channels. IT must redesign architecture, security, mobile apps, and integration to realize that strategy.' Which SAM perspective is most precise?", o:["Technology transformation","Service level","Competitive potential","Strategy execution"], a:0, e:"Hard point: business strategy is the driver, but the next major domain is IT strategy/infrastructure transformation, so Technology transformation is stronger than generic Strategy execution."},
-      {c:"21", t:"Hard Case", q:"EN: A university is not trying to change its business model with IT, but it wants excellent availability for learning platforms, identity, email, and administration. Which SAM perspective?", o:["Service level","Competitive potential","Technology transformation","Financial focus"], a:0, e:"The clue is reliable, excellent IT service delivery, not IT-driven business strategy."},
+      {c:"21", t:"Hard Case", q:"EN: Business strategy drives a major redesign of IT strategy, architecture, security, and digital channels. Which SAM perspective?", o:["Technology transformation","Service level","Competitive potential","Strategy execution"], a:0, e:"Hard point: business strategy is the driver, but the next major domain is IT strategy/infrastructure transformation, so Technology transformation is stronger than generic Strategy execution."},
+      {c:"21", t:"Hard Case", q:"EN: An organization mainly wants excellent IT availability and service delivery, not a new IT-driven business model. Which SAM perspective?", o:["Service level","Competitive potential","Technology transformation","Financial focus"], a:0, e:"The clue is reliable, excellent IT service delivery, not IT-driven business strategy."},
       {c:"21", t:"Hard Case", q:"EN: An e-commerce firm uses recommendation algorithms to invent new marketplace services and change its revenue model. Which SAM perspective?", o:["Competitive potential","Technology transformation","Service level","Strategy execution"], a:0, e:"IT strategy/capability changes business strategy, which is Competitive potential."},
       {c:"21", t:"Hard Case", q:"EN: A manufacturer says IT is currently not critical, but a planned IoT platform will become central to future products. Which Strategic Impact Grid mode?", o:["Turnaround mode","Factory mode","Support mode","Service level"], a:0, e:"Future strategic importance is high while current IT dependence is lower: Turnaround."},
-      {c:"21", t:"Hard Case", q:"EN: A logistics company cannot operate without its current routing systems, but management sees little future strategic differentiation from new IT. Which Strategic Impact Grid mode?", o:["Factory mode","Strategic mode","Turnaround mode","Support mode"], a:0, e:"High current reliability need but low innovation need is Factory."},
+      {c:"21", t:"Hard Case", q:"EN: Current IT reliability is critical, but future IT innovation is not expected to differentiate the business. Which Strategic Impact Grid mode?", o:["Factory mode","Strategic mode","Turnaround mode","Support mode"], a:0, e:"High current reliability need but low innovation need is Factory."},
       {c:"21", t:"Hard Case", q:"EN: Two companies both use CRM. Company A uses it only to reduce support time; Company B uses it to build customer intimacy and personalized sales. Which statement is best?", o:["Same technology can support different focus points depending on business intent","CRM always means Customer focus regardless of actual business purpose","CRM always means Operational focus because it stores service tickets","Technology name alone determines the strategic focus point"], a:0, e:"Hard point: classify by business objective, not by technology name alone."},
       {c:"21", t:"Hard Case", q:"EN: Barry Callebaut case says 'high quality products, innovation, competition from large players.' Which focus is more exam-safe than generic manufacturing efficiency?", o:["Product focus","Operational focus","Financial focus","Customer focus"], a:0, e:"The clue words high quality products and innovation override the generic manufacturer stereotype."},
       {c:"21", t:"Hard Case", q:"EN: FOD Finance case says 'improve online tax declarations and interactions with citizens.' Which focus is better than choosing Financial just because of the name?", o:["Customer focus","Financial focus","Product focus","Operational focus"], a:0, e:"The wording is citizen interaction/service, so Customer focus is stronger."},
@@ -3560,7 +3766,7 @@
       {c:"15", t:"Calculation Drill", q:"EN: PC engineer spends 2 hours/week on printers out of 40 hours. Printer allocation?", o:["5%","2%","20%","95%"], a:0, e:"2/40 = 5%."},
       {c:"15", t:"Calculation Drill", q:"EN: If that engineer costs 45,750/year and 5% is allocated to printing, printing personnel cost?", o:["2,287.50","4,575","9,150","43,462.50"], a:0, e:"45,750 x 0.05 = 2,287.50."},
       {c:"15", t:"Calculation Drill", q:"EN: Printing hardware/software cost is 20,000 and allocated personnel cost is 2,287.50. Volume 255,000 pages. Approximate total cost per page?", o:["0.087","0.078","0.9","0.009"], a:0, e:"(20,000 + 2,287.50) / 255,000 is about 0.087."},
-      {c:"17", t:"Calculation Drill", q:"EN: 99.5% availability over a 30-day month allows approximately how much downtime?", o:["3.6 hours","36 minutes","7.2 hours","0.5 hours"], a:0, e:"30 x 24 = 720h; 0.5% of 720 = 3.6h."},
+      {c:"17", t:"Calculation Drill", q:"EN: 99.5% availability over a 7-day week allows approximately how much downtime?", o:["About 50 minutes","About 5 minutes","About 3.6 hours","About 7.2 hours"], a:0, e:"7 x 24 = 168h; 0.5% of 168 = 0.84h, which is about 50 minutes."},
       {c:"17", t:"Calculation Drill", q:"EN: 99.9% availability over a 30-day month allows approximately how much downtime?", o:["43 minutes","4.3 hours","3.6 hours","7.2 minutes"], a:0, e:"0.1% of 720h = 0.72h = 43.2 minutes."},
       {c:"17", t:"Calculation Drill", q:"EN: 99.99% availability over one year allows approximately how much downtime? Use 365 days.", o:["About 52.6 minutes","About 8.76 hours","About 5.26 hours","About 3.65 days"], a:0, e:"Year has 525,600 minutes; 0.01% = 52.56 minutes."},
       {c:"17", t:"Calculation Drill", q:"EN: 250 disks, each MTBF 1,200,000h. If any disk failure counts, system MTBF?", o:["4,800h","1,200,000h","300,000,000h","250h"], a:0, e:"1,200,000 / 250 = 4,800h."},
@@ -3588,6 +3794,14 @@
         .replace(/\.$/, "");
     }
 
+    function compactStuviaOption(text) {
+      return cleanStuviaAnswer(text)
+        .replace(/^Service Operation\s*\(specifically,\s*Access Management\)$/i, "Access Management")
+        .replace(/\s*\([^)]{12,}\)/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
     function isGoodStuviaOption(text) {
       const value = cleanStuviaAnswer(text);
       if (value.length < 2 || value.length > 170) return false;
@@ -3598,8 +3812,8 @@
 
     function makeStuviaQuiz() {
       const eligible = stuviaCards
-        .map((card, index) => ({...card, original: index, answer: cleanStuviaAnswer(card.a)}))
-        .filter(card => isGoodStuviaOption(card.answer));
+        .map((card, index) => ({...card, original: index, answer: compactStuviaOption(card.a)}))
+        .filter(card => card.t === "Stuvia Definition" && isGoodStuviaOption(card.answer));
 
       const answerPool = eligible
         .map(card => card.answer)
@@ -3621,6 +3835,15 @@
         return options.length === 3 ? options : null;
       }
 
+      function compactDefinitionQuestion(text) {
+        let value = String(text || "")
+          .replace(/^EN:\s*/i, "")
+          .replace(/^Identify the concept:\s*/i, "")
+          .trim();
+        if (value.length > 132) value = value.slice(0, 132).replace(/\s+\S*$/, "") + "...";
+        return value;
+      }
+
       return eligible
         .map(card => {
           const distractors = distractorsFor(card);
@@ -3630,7 +3853,7 @@
             .replace(/^EN:\s*/i, "")
             .replace(/^Which answer best matches this Stuvia review question\?\s*/i, "")
             .trim();
-          const question = isDefinition ? card.q : `EN: ${cleanQuestion}`;
+          const question = isDefinition ? `EN: Which concept matches this definition? ${compactDefinitionQuestion(card.q)}` : `EN: ${cleanQuestion}`;
           return {
             c: card.c,
             t: "Stuvia MCQ",
@@ -3644,6 +3867,57 @@
     }
 
     quiz.push(...makeStuviaQuiz());
+
+    const essayCore = [
+      {c:"2", t:"Book Essay", q:"EN: Explain how business processes, the value chain, value systems, and supply chains are related. Give one example of where IT creates value.", a:"A strong answer explains that an organization can be viewed as a system that creates added value through business processes. Porter value chain separates primary and support activities. Multiple organizations' value chains can connect into a value system, and a supply chain is a common value-system example. IT supports information flows, coordination, tracking, integration, and sometimes competitive advantage.", rubric:["Defines business process and value creation","Distinguishes value chain and value system","Explains supply chain as connected value chains","Gives an IT-supported information-flow example"]},
+      {c:"2", t:"Book Essay", q:"EN: Distinguish operational, tactical, and strategic benefits of information systems. Use examples.", a:"Operational benefits improve day-to-day efficiency, speed, error reduction, or cost. Tactical benefits help management achieve objectives and make better decisions. Strategic benefits affect competitive positioning, strategy, or business model. The same system can move between levels depending on business intent.", rubric:["Defines all three benefit levels","Uses examples rather than just labels","Classifies by business effect, not technology name","Mentions that the same system can support different benefit levels"]},
+      {c:"3", t:"Book Essay", q:"EN: Explain the four domains of the information systems framework and why a project can fail when only the application domain is considered.", a:"The domains are business process, data, application, and infrastructure. A project can fail if software is built but business processes are not redesigned, data ownership is unclear, or infrastructure cannot support the application. The framework prevents one-domain thinking and supports alignment across business and technology.", rubric:["Names four domains","Explains each domain briefly","Explains one-domain failure","Connects framework to alignment/management"]},
+      {c:"13", t:"Book Essay", q:"EN: Explain IT as a service. Include service type, service class, service unit, and why choosing the wrong service unit matters.", a:"IT as a service means users obtain value without owning all resources that deliver it. Service types/classes describe what is delivered and its quality/business role. The service unit measures consumption, such as PC-year, access-year, mailbox-month, printed page, or GB storage. Wrong units make planning, costing, charge-out, and fairness weak.", rubric:["Explains service logic","Mentions type/class/unit","Gives service-unit examples","Explains planning/costing consequence"]},
+      {c:"13", t:"Book Essay", q:"EN: Compare outsourcing and cloud computing as sourcing options. Mention IaaS, PaaS, SaaS and typical decision criteria.", a:"Outsourcing delegates IT tasks/services to an external provider; cloud computing provides scalable services through cloud models. IaaS provides infrastructure; PaaS provides platform/runtime; SaaS provides complete applications. Decision criteria include competence, cost, scale, flexibility, control, security, sovereignty, integration, and dependency.", rubric:["Defines outsourcing","Defines cloud service models","Compares control/cost/flexibility/dependency","Uses IaaS/PaaS/SaaS correctly"]},
+      {c:"13", t:"Book Essay", q:"EN: Compare ITIL, ISO/IEC 20000, IT4IT, and CMMI-SVC. Why are they not interchangeable?", a:"ITIL is a best-practice framework for IT service management. ISO/IEC 20000 is an auditable/certifiable service management system standard. IT4IT uses value streams and reference architecture for IT management. CMMI-SVC is an improvement/maturity model for services. They differ in purpose: guidance, certification, architecture/value stream, and maturity improvement.", rubric:["Expands or explains each acronym/framework","Distinguishes guidance vs certification","Mentions IT4IT value streams","Mentions CMMI-SVC maturity/improvement"]},
+      {c:"14", t:"Book Essay", q:"EN: Explain the difference between service catalog, service request handling, and services planning. Use an out-of-catalog analytics platform as an example.", a:"The service catalog defines available services and requestable items. Service request handling receives, validates, authorizes, and fulfills requests. Services planning forecasts service consumption and required resources. An out-of-catalog analytics platform is not a simple request; it needs validation, planning, approval, resource analysis, and financial impact analysis.", rubric:["Defines service catalog","Defines request handling","Defines services planning","Handles out-of-catalog case correctly"]},
+      {c:"15", t:"Book Essay", q:"EN: Explain full cost recovery and charge-out. What makes a charge-out system good or bad?", a:"Full cost recovery divides direct and indirect costs by planned service volume to recover total service cost. Charge-out allocates IT costs to users/business units using service units and cost drivers. A good charge-out system is understandable, fair, predictable, verifiable, and consistent. It should not be mathematically accurate but impossible for users to understand.", rubric:["Gives full cost recovery formula","Explains direct/indirect cost and planned volume","Explains charge-out purpose","Lists quality principles for charge-out"]},
+      {c:"15", t:"Calculation Essay", q:"EN: Explain how to evaluate an IT project using NPV and IRR. Include the meaning of positive and negative NPV.", a:"NPV discounts future net cash flows to present value and subtracts initial investment: sum CF_t/(1+r)^t. Positive NPV means discounted benefits exceed discounted costs under the assumptions; negative NPV means financial value is destroyed. IRR is the discount rate where NPV equals zero. A good answer also notes that financial value is not the only decision criterion.", rubric:["Writes or explains NPV formula","Explains discounting","Interprets positive/negative NPV","Defines IRR"]},
+      {c:"16", t:"Book Essay", q:"EN: Distinguish event, incident, and problem handling. Use a repeated Monday database outage as example.", a:"An event is a significant state change in an IT system. An incident is an unwanted interruption or degradation of service. A problem is the underlying persistent cause of one or more incidents. A repeated Monday database outage should first be restored as incidents, then investigated through problem handling to find root cause.", rubric:["Defines event","Defines incident","Defines problem/root cause","Applies to repeated outage"]},
+      {c:"16", t:"Book Essay", q:"EN: Explain standard, normal, and urgent changes. Why can installing a network printer be normal rather than standard?", a:"Standard changes are low-risk, routine, pre-approved models. Normal changes need assessment and approval. Urgent changes are expedited to prevent or restore major disruption and are reviewed afterward. Installing a network printer may affect shared network/server/print infrastructure, so it needs normal evaluation rather than being treated as a simple device task.", rubric:["Defines three change types","Mentions risk/pre-approval/urgency","Explains shared infrastructure impact","Applies to network printer"]},
+      {c:"17", t:"Book Essay", q:"EN: What makes a service level or SLA acceptable? Rewrite a vague login-time SLA into a good one.", a:"A good service level is measurable, precise, period-based, service-oriented, and states a minimum quality requirement. It includes a measured parameter, threshold, percentage, and period. A good rewrite is: measured monthly, 95% of Intranet logins complete within 10 seconds. Technical router latency alone may be operational level, not customer-facing SLA.", rubric:["Lists acceptability criteria","Includes period/percentage/threshold/service parameter","Provides corrected login example","Distinguishes technical vs service-facing metric"]},
+      {c:"17", t:"Calculation Essay", q:"EN: Explain how MTBF, MTTR, and availability are related. How do multiple required components affect availability?", a:"MTBF is mean time between failures; MTTR is mean time to repair. A simple approximation uses unavailability = MTTR/MTBF and availability = 1 - unavailability. If multiple components are required in series, combined availability is the product of component availabilities, so total availability is lower than each individual availability.", rubric:["Defines MTBF","Defines MTTR","Explains availability/unavailability relation","Explains serial component multiplication"]},
+      {c:"18", t:"Book Essay", q:"EN: Explain supplier classification. How would you classify IBM/mainframe, toner, Cisco-like network equipment, and deep Microsoft platform dependency?", a:"Supplier classification depends on importance, risk, dependency, substitutability, and strategic relationship. IBM/mainframe or deeply integrated Microsoft platform can be strategic if business-critical and hard to replace. Toner is commodity because it is standardized and easy to replace. Cisco-like network equipment may be tactical/important infrastructure but usually more replaceable than a strategic partner.", rubric:["Names classification criteria","Classifies strategic supplier correctly","Classifies commodity supplier correctly","Handles tactical/operational nuance"]},
+      {c:"19", t:"Book Essay", q:"EN: Explain major IT personnel roles and map activities to roles: service desk, system administrator, business architect, financial manager, CIO.", a:"Service desk is first contact for incidents, information questions, and service requests. System administrators configure accounts, rights, storage, systems and infrastructure. Business/enterprise architects translate business processes into data/application/infrastructure implications. Financial managers calculate and manage IT costs. CIO is overall IT department manager and links IT to organizational objectives.", rubric:["Explains at least five roles","Maps activities to roles","Distinguishes architecture vs support","Explains CIO responsibility"]},
+      {c:"20", t:"Book Essay", q:"EN: Explain IT governance using ISO/IEC 38500 and COBIT. How do governance and management differ?", a:"IT governance ensures IT supports business objectives and that the right decisions are made at organizational level. ISO/IEC 38500 emphasizes Evaluate, Direct, Monitor. COBIT means Control Objectives for Information and Related Technologies and includes goals cascade from stakeholder needs to enterprise goals, IT-related goals, and enabler/process goals. Governance evaluates/directs/monitors; management plans/builds/runs/monitors IT activities.", rubric:["Explains governance purpose","Mentions Evaluate/Direct/Monitor","Explains COBIT goals cascade","Distinguishes governance from management"]},
+      {c:"20", t:"Case Essay", q:"EN: ProBranif has an IT steering committee with top management and IT managers but no user representatives. Explain the governance weakness and propose a better decision structure.", a:"The weakness is decision rights: application and benefit decisions require business/user input, otherwise IT may not align with real needs. Top management and IT managers are necessary but insufficient. A better structure includes top management, CIO/IT managers, and user representatives/divisional reps for application/investment decisions, while technical architecture/infrastructure details remain led by IT specialists.", rubric:["Identifies missing user/business representation","Explains why it is governance, not HR","Separates application decisions from technical decisions","Proposes balanced committee/workgroups"]},
+      {c:"20", t:"Case Essay", q:"EN: Explain how to choose between corporate overhead, charge-out, business-unit funding, and hybrid IT funding. Apply it to Lidl, Bol.com, and Philips.", a:"Corporate overhead fits simple/support IT where detailed billing is costly. Charge-out fits measurable consumption and cost accountability. Business-unit funding fits division-specific strategic initiatives. Hybrid combines shared central services and local/BU-specific funding. Lidl store-level measurable retail IT supports charge-out; Bol.com operational systems may use charge-out/accountability and informational systems need investment; Philips as multinational fits hybrid.", rubric:["Explains each funding mechanism","Uses measurability/accountability/complexity","Applies Lidl","Applies Bol.com/Philips"]},
+      {c:"21", t:"Book Essay", q:"EN: Compare Strategic Impact Grid, Strategic Alignment Model, strategic focus points, and operating model. Why are these often confused?", a:"Strategic Impact Grid classifies IT by current operational dependence and future strategic importance: support, factory, turnaround, strategic. Strategic Alignment Model links business strategy, IT strategy, organizational infrastructure, and IT infrastructure, with perspectives such as strategy execution, technology transformation, competitive potential, service level. Strategic focus points classify business strategy: financial, operational, product, customer. Operating model uses process standardization and integration: diversification, replication, coordination, unification. They are confused because all discuss business-IT alignment but use different dimensions.", rubric:["Defines all four frameworks","Gives dimensions/categories","Explains confusion","Uses correct English terms"]},
+      {c:"21", t:"Case Essay", q:"EN: For KBC, Bol.com, Barry Callebaut, FOD Finance, Lidl, and Philips, explain how clue words in the case lead to focus point or alignment recommendations.", a:"A strong answer avoids company-name stereotypes and reads clue words. KBC: trust, digital channels, banking service -> customer focus/technology transformation/strategic IT. Bol.com: online marketplace, recommendations, digital revenue -> strategic mode/competitive potential/customer focus. Barry Callebaut: high-quality products and innovation -> product focus; manufacturing efficiency wording -> operational focus. FOD Finance: citizen online tax services -> customer focus; tax control wording -> financial focus. Lidl: cost-driven retail/store accountability -> financial/operational and charge-out. Philips: multinational, shared central IT plus division projects -> hybrid funding; innovation/health-tech may point product focus.", rubric:["Uses clue words, not stereotypes","Classifies multiple organizations","Distinguishes focus/Grid/SAM/funding","Explains ambiguous cases"]},
+      {c:"21", t:"Book Essay", q:"EN: Explain the four operating models from Ross et al. using process standardization and integration.", a:"Operating model uses two dimensions: process standardization and process/data integration. Diversification is low standardization and low integration. Replication is high standardization but lower integration. Coordination is high integration with lower standardization. Unification is high standardization and high integration. The model influences enterprise architecture.", rubric:["Names two dimensions","Defines four quadrants","Connects to enterprise architecture","Gives example or clue for each"]}
+    ];
+
+    function makeSourceEssays() {
+      const seen = new Set(essayCore.map(item => item.q));
+      return cards
+        .map(card => ({...card, answer: cleanStuviaAnswer(card.a)}))
+        .filter(card => {
+          if (seen.has(card.q)) return false;
+          if (/source leaves this answer blank|use the chapter notes|^\?$/i.test(card.answer)) return false;
+          if (card.t === "Stuvia Definition" && card.answer.length < 220) return false;
+          return card.t.includes("Stuvia Review") || card.answer.length >= 260 || /describe|explain|what are|compare|difference|how does|briefly/i.test(card.q);
+        })
+        .slice(0, 90)
+        .map(card => ({
+          c: card.c,
+          t: card.t.includes("Stuvia") ? "Source Essay" : "Card Essay",
+          q: card.q,
+          a: card.answer,
+          rubric: [
+            "Answer the actual question directly",
+            "Use the correct English course terms",
+            "Include the main distinctions or process steps",
+            "Add a short example when the question is conceptual"
+          ]
+        }));
+    }
+
+    const essays = [...essayCore, ...makeSourceEssays()];
 
     const cloze = [
       {c:"2", t:"Cloze Basics", q:"EN: Porter primary activity for receiving and handling input materials is ____.", answers:["inbound logistics"], e:"Inbound logistics = receiving, warehousing, and handling inputs. 中文：原材料进入企业这一段。"},
@@ -4420,14 +4694,17 @@
 
     const state = loadState();
     const hasSavedQuizIndex = Number.isInteger(state.quizIndex);
+    const hasSavedEssayIndex = Number.isInteger(state.essayIndex);
     state.known ||= {};
     state.weak ||= {};
     state.quiz ||= {};
+    state.essay ||= {};
     state.cloze ||= {};
     state.chapter ||= "all";
     state.view = "quiz";
     state.cardIndex ||= 0;
     state.quizIndex = hasSavedQuizIndex ? state.quizIndex : 0;
+    state.essayIndex = hasSavedEssayIndex ? state.essayIndex : 0;
     state.clozeIndex ||= 0;
     state.shuffleSeed ||= 0;
     state.mode ||= "all";
@@ -4448,6 +4725,7 @@
           search: state.search,
           cardIndex: state.cardIndex,
           quizIndex: state.quizIndex,
+          essayIndex: state.essayIndex,
           clozeIndex: state.clozeIndex
         };
         localStorage.setItem(storeKey, JSON.stringify(state));
@@ -4636,7 +4914,7 @@
       } else if (tag.includes("cloze")) {
         basis = "Cloze keyword drill generated from the same chapter concept/definition.";
       }
-      const kind = type === "card" ? "Flashcard" : type === "quiz" ? "MCQ" : type === "cloze" ? "Cloze" : "Review item";
+      const kind = type === "card" ? "Flashcard" : type === "quiz" ? "MCQ" : type === "essay" ? "Essay" : type === "cloze" ? "Cloze" : "Review item";
       return `${kind} source: ${chapterSource} · Topic tag: ${item.t} · ${exerciseDetailFor(item)} · ${basis}`;
     }
 
@@ -4687,6 +4965,7 @@
       state.retain = {};
       state.cardIndex = 0;
       state.quizIndex = firstUnansweredIndex(filtered(quiz, "quiz"), "quiz");
+      state.essayIndex = 0;
       state.clozeIndex = 0;
       state.showAnswer = false;
     }
@@ -4895,7 +5174,8 @@
       $("statCloze").textContent = `${clozeAnswered.length}/${clozeSet.length} · ${clozeAnswered.length ? Math.round(clozeCorrect / clozeAnswered.length * 100) : 0}%`;
       const quizAll = Object.values(state.quiz);
       const clozeAll = Object.values(state.cloze);
-      $("statWrong").textContent = Object.values(state.weak).filter(Boolean).length + quizAll.filter(x => x.wrong).length + clozeAll.filter(x => x.wrong).length;
+      const essayAll = Object.values(state.essay);
+      $("statWrong").textContent = Object.values(state.weak).filter(Boolean).length + quizAll.filter(x => x.wrong).length + clozeAll.filter(x => x.wrong).length + essayAll.filter(x => x.wrong).length;
       if (lastSavedOk) {
         $("statSave").textContent = state.updatedAt ? new Date(state.updatedAt).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}) : "已自动保存";
       } else {
@@ -5042,6 +5322,136 @@
       render();
     }
 
+    function currentEssay() {
+      const list = filtered(essays, "essay");
+      if (!list.length) return {list, item: null};
+      state.essayIndex = Math.max(0, Math.min(state.essayIndex, list.length - 1));
+      return {list, item: list[state.essayIndex]};
+    }
+
+    function renderEssay() {
+      const {list, item} = currentEssay();
+      if (!item) {
+        $("essayMeta").innerHTML = "";
+        $("essayQuestion").textContent = "没有匹配的大题";
+        $("essayAnswer").value = "";
+        $("essayFeedback").hidden = true;
+        $("essaySource").innerHTML = "";
+        $("essayRubric").innerHTML = "";
+        $("essayScore").textContent = "未评分";
+        $("essayProgress").style.width = "0%";
+        return;
+      }
+      const record = state.essay[item.id] || {};
+      $("essayMeta").innerHTML = metaHtml("essay", item, state.essayIndex, list.length);
+      $("essayQuestion").innerHTML = annotatedText(item.q);
+      $("essayAnswer").value = record.answer || "";
+      $("essaySource").innerHTML = `<strong>来源 / Source:</strong> ${sourceFor(item, "essay")}`;
+      $("essayRubric").innerHTML = (item.rubric || []).map(point => `<div>• ${escapeHtml(point)}</div>`).join("");
+      $("essayScore").textContent = Number.isFinite(record.score) ? `${record.score}/10` : "未评分";
+      $("essayFeedback").hidden = !record.feedback;
+      $("essayFeedback").innerHTML = record.feedback ? formattedReviewHtml(record.feedback) : "";
+      $("essayProgress").style.width = `${(state.essayIndex + 1) / list.length * 100}%`;
+    }
+
+    function essayPrompt(item, answer) {
+      return [
+        "You are grading an ICT Service Management exam short-answer/essay response.",
+        "The student is preparing for an English exam. Give feedback in Chinese, but preserve key English terms.",
+        "Grade strictly but helpfully on a 0-10 scale.",
+        "Return plain text only. Do not use Markdown headings, asterisks, or bullet symbols.",
+        "",
+        `Question: ${item.q}`,
+        "",
+        `Student answer: ${answer || "(blank)"}`,
+        "",
+        `Reference answer: ${item.a}`,
+        "",
+        `Rubric: ${(item.rubric || []).join("; ")}`,
+        "",
+        "Output format:",
+        "Score: X/10",
+        "What is correct: ...",
+        "Missing points: ...",
+        "How to improve in exam English: ...",
+        "Model answer in 4-6 sentences: ..."
+      ].join("\n");
+    }
+
+    function parseScore(text) {
+      const match = String(text || "").match(/(?:score|分数)\s*[:：]?\s*(\d+(?:\.\d+)?)\s*\/\s*10/i);
+      if (!match) return null;
+      return Math.max(0, Math.min(10, Number(match[1])));
+    }
+
+    async function gradeEssay() {
+      const {item} = currentEssay();
+      if (!item) return;
+      const answer = $("essayAnswer").value.trim();
+      const apiKey = $("essayApiKey").value.trim();
+      if (!answer) {
+        $("essayStatus").textContent = "先写答案再评分。";
+        return;
+      }
+      if (!apiKey) {
+        const feedback = `未填写 API key，无法自动评分。\n\n参考答案：${item.a}\n\n评分要点：${(item.rubric || []).join("；")}`;
+        state.essay[item.id] = {...(state.essay[item.id] || {}), answer, feedback, score: null, ts: new Date().toISOString()};
+        $("essayStatus").textContent = "未填写 API key，已显示参考评分要点。";
+        save();
+        renderEssay();
+        return;
+      }
+      $("essayStatus").textContent = "正在评分...";
+      $("gradeEssay").disabled = true;
+      try {
+        const response = await fetch("https://api.openai.com/v1/responses", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: $("essayModel").value,
+            input: essayPrompt(item, answer),
+            temperature: 0.1
+          })
+        });
+        const json = await response.json();
+        if (!response.ok) throw new Error(json.error?.message || `HTTP ${response.status}`);
+        const feedback = json.output_text || (json.output || [])
+          .flatMap(part => part.content || [])
+          .map(part => part.text || "")
+          .join("\n")
+          .trim();
+        const score = parseScore(feedback);
+        state.essay[item.id] = {answer, feedback, score, correct: score !== null ? score >= 7 : false, wrong: score !== null ? score < 7 : false, ts: new Date().toISOString()};
+        $("essayStatus").textContent = "评分完成。";
+      } catch (error) {
+        const feedback = `GPT 评分失败：${error.message}\n\n参考答案：${item.a}\n\n评分要点：${(item.rubric || []).join("；")}`;
+        state.essay[item.id] = {...(state.essay[item.id] || {}), answer, feedback, score: null, ts: new Date().toISOString()};
+        $("essayStatus").textContent = "评分失败，已显示参考答案。";
+      } finally {
+        $("gradeEssay").disabled = false;
+        save();
+        renderEssay();
+      }
+    }
+
+    function showEssayModel() {
+      const {item} = currentEssay();
+      if (!item) return;
+      const answer = $("essayAnswer").value.trim();
+      state.essay[item.id] = {
+        ...(state.essay[item.id] || {}),
+        answer,
+        feedback: `参考答案：${item.a}\n\n评分要点：${(item.rubric || []).join("；")}`,
+        score: state.essay[item.id]?.score ?? null,
+        ts: new Date().toISOString()
+      };
+      save();
+      renderEssay();
+    }
+
     function allItems(list, type) {
       return list.map((item, i) => ({...item, id: itemKey(type, item), original: i}));
     }
@@ -5085,7 +5495,18 @@
             detail: `<div><strong>Your answer:</strong> ${record.answer || "(blank)"}</div><div><strong>Correct:</strong> ${item.answers[0]}</div><div>${item.e}</div><div><strong>Source:</strong> ${sourceFor(item, "cloze")}</div>`
           };
         });
-      return [...cardMistakes, ...quizMistakes, ...clozeMistakes];
+      const essayMistakes = allItems(essays, "essay")
+        .filter(item => state.essay[item.id]?.wrong && matches(item))
+        .map(item => {
+          const record = state.essay[item.id];
+          return {
+            type: "essay",
+            label: "大题",
+            item,
+            detail: `<div><strong>Score:</strong> ${Number.isFinite(record.score) ? `${record.score}/10` : "Review"}</div><div><strong>Your answer:</strong> ${escapeHtml((record.answer || "").slice(0, 260))}</div><div><strong>Feedback:</strong> ${escapeHtml(cleanMarkdownText(record.feedback || ""))}</div><div><strong>Source:</strong> ${sourceFor(item, "essay")}</div>`
+          };
+        });
+      return [...cardMistakes, ...quizMistakes, ...clozeMistakes, ...essayMistakes];
     }
 
     const chapterReviewGuide = {
@@ -5172,6 +5593,7 @@
 
     function reviewDataset() {
       const quizItems = allItems(quiz, "quiz");
+      const essayItems = allItems(essays, "essay");
       const clozeItems = allItems(cloze, "cloze");
       const cardItems = allItems(cards, "card");
       const chapterStats = {};
@@ -5216,6 +5638,24 @@
           }
         }
       });
+      essayItems.forEach(item => {
+        const record = state.essay[item.id];
+        const chapter = ensure(chapterStats, item.c, `Chapter ${item.c}`);
+        const topic = ensure(topicStats, `${item.c} · ${item.t}`);
+        chapter.total += 1;
+        topic.total += 1;
+        if (record?.answer || Number.isFinite(record?.score)) {
+          chapter.done += 1;
+          topic.done += 1;
+          if (Number.isFinite(record.score) && record.score >= 7) {
+            chapter.correct += 1;
+            topic.correct += 1;
+          } else {
+            chapter.wrong += 1;
+            topic.wrong += 1;
+          }
+        }
+      });
       cardItems.forEach(item => {
         const chapter = ensure(chapterStats, item.c, `Chapter ${item.c}`);
         const topic = ensure(topicStats, `${item.c} · ${item.t}`);
@@ -5251,6 +5691,8 @@
           quizWrong: Object.values(state.quiz).filter(x => x.wrong).length,
           clozeDone: Object.keys(state.cloze).length,
           clozeWrong: Object.values(state.cloze).filter(x => x.wrong).length,
+          essayDone: Object.values(state.essay).filter(x => x.answer || Number.isFinite(x.score)).length,
+          essayWeak: Object.values(state.essay).filter(x => x.wrong).length,
           weakCards: Object.keys(state.weak).length,
           knownCards: Object.keys(state.known).length
         },
@@ -5267,7 +5709,7 @@
       const weakTopics = data.topics.filter(x => x.done || x.weakCards).slice(0, 8);
       const lines = [];
       lines.push(`记录时间：${data.generatedAt}`);
-      lines.push(`选择题：${overall.quizDone} 已做，${overall.quizWrong} 错；填空题：${overall.clozeDone} 已做，${overall.clozeWrong} 错；不熟卡片：${overall.weakCards}。`);
+      lines.push(`选择题：${overall.quizDone} 已做，${overall.quizWrong} 错；大题：${overall.essayDone || 0} 已做，${overall.essayWeak || 0} 待加强；填空题：${overall.clozeDone} 已做，${overall.clozeWrong} 错；不熟卡片：${overall.weakCards}。`);
       lines.push("");
       lines.push("优先复习章节：");
       if (!weakChapters.length) {
@@ -5365,6 +5807,8 @@
           <div class="kpi-grid">
             <div class="kpi"><strong>${overall.quizDone}</strong><span>选择题已做</span></div>
             <div class="kpi"><strong>${overall.quizWrong}</strong><span>选择题错题</span></div>
+            <div class="kpi"><strong>${overall.essayDone || 0}</strong><span>大题已做</span></div>
+            <div class="kpi"><strong>${overall.essayWeak || 0}</strong><span>大题待加强</span></div>
             <div class="kpi"><strong>${overall.clozeDone}</strong><span>填空题已做</span></div>
             <div class="kpi"><strong>${overall.clozeWrong}</strong><span>填空题错题</span></div>
             <div class="kpi"><strong>${overall.weakCards}</strong><span>不熟卡片</span></div>
@@ -5524,6 +5968,12 @@
         state.clozeIndex = Math.max(0, index);
         state.view = "cloze";
       }
+      if (type === "essay") {
+        const list = filtered(essays, "essay");
+        const index = list.findIndex(item => item.id === id);
+        state.essayIndex = Math.max(0, index);
+        state.view = "essay";
+      }
       render();
     }
 
@@ -5536,6 +5986,9 @@
       }
       if (type === "cloze" && state.cloze[id]) {
         delete state.cloze[id];
+      }
+      if (type === "essay" && state.essay[id]) {
+        delete state.essay[id];
       }
       save();
       render();
@@ -5634,6 +6087,7 @@
       });
       $("cardsView").hidden = state.view !== "cards";
       $("quizView").hidden = state.view !== "quiz";
+      $("essayView").hidden = state.view !== "essay";
       $("clozeView").hidden = state.view !== "cloze";
       $("mistakesView").hidden = state.view !== "mistakes";
       $("aiView").hidden = state.view !== "ai";
@@ -5646,12 +6100,77 @@
       renderView();
       renderCards();
       renderQuiz();
+      renderEssay();
       renderCloze();
       renderMistakes();
       renderAiReview();
       renderMap();
       save();
     }
+
+    function setApiDrawer(open) {
+      $("apiDrawer").hidden = !open;
+      $("apiFab").classList.toggle("active", open);
+      $("apiFab").setAttribute("aria-expanded", String(open));
+      if (open) $("globalApiKey").focus();
+    }
+
+    function syncApiKey(sourceId) {
+      const source = $(sourceId);
+      if (!source) return;
+      ["globalApiKey", "apiKey", "essayApiKey"].forEach(id => {
+        const target = $(id);
+        if (target && target !== source) target.value = source.value;
+      });
+      $("apiDrawerStatus").textContent = source.value
+        ? "API key 已注入到 AI 复盘和大题评分输入框；仍然只存在当前页面。"
+        : "API key 已清空；不会写入文件或本地记录。";
+    }
+
+    function syncAiModel(sourceId) {
+      const source = $(sourceId);
+      if (!source) return;
+      ["globalModel", "aiModel", "essayModel"].forEach(id => {
+        const target = $(id);
+        if (target && target !== source) target.value = source.value;
+      });
+    }
+
+    function openAiReview(runNow = false) {
+      syncApiKey("globalApiKey");
+      syncAiModel("globalModel");
+      state.view = "ai";
+      render();
+      setApiDrawer(false);
+      window.scrollTo({top: 0, behavior: "smooth"});
+      if (runNow) runAiReview();
+    }
+
+    function openEssayGrade(runNow = false) {
+      syncApiKey("globalApiKey");
+      syncAiModel("globalModel");
+      state.view = "essay";
+      render();
+      setApiDrawer(false);
+      window.scrollTo({top: 0, behavior: "smooth"});
+      if (runNow) gradeEssay();
+    }
+
+    $("apiFab").onclick = () => setApiDrawer($("apiDrawer").hidden);
+    $("apiClose").onclick = () => setApiDrawer(false);
+    $("globalApiKey").oninput = () => syncApiKey("globalApiKey");
+    $("apiKey").oninput = () => syncApiKey("apiKey");
+    $("essayApiKey").oninput = () => syncApiKey("essayApiKey");
+    $("globalModel").onchange = () => syncAiModel("globalModel");
+    $("aiModel").onchange = () => syncAiModel("aiModel");
+    $("essayModel").onchange = () => syncAiModel("essayModel");
+    $("apiGoReview").onclick = () => openAiReview(false);
+    $("apiRunReview").onclick = () => openAiReview(true);
+    $("apiGoEssay").onclick = () => openEssayGrade(false);
+    $("apiGradeEssay").onclick = () => openEssayGrade(true);
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !$("apiDrawer").hidden) setApiDrawer(false);
+    });
 
     document.querySelectorAll(".tabs button").forEach(btn => {
       btn.onclick = () => {
@@ -5718,6 +6237,22 @@
       }
       render();
     };
+    $("essayAnswer").oninput = () => {
+      const {item} = currentEssay();
+      if (!item) return;
+      state.essay[item.id] = {...(state.essay[item.id] || {}), answer: $("essayAnswer").value, ts: new Date().toISOString()};
+      save();
+    };
+    $("gradeEssay").onclick = gradeEssay;
+    $("showEssayModel").onclick = showEssayModel;
+    $("prevEssay").onclick = () => {
+      state.essayIndex -= 1;
+      render();
+    };
+    $("nextEssay").onclick = () => {
+      state.essayIndex += 1;
+      render();
+    };
     $("checkCloze").onclick = () => checkCloze(false);
     $("revealCloze").onclick = () => checkCloze(true);
     $("clozeInput").onkeydown = (event) => {
@@ -5752,7 +6287,7 @@
       const first = collectMistakes()[0];
       $("mode").value = "weak";
       state.mode = "weak";
-      state.view = first?.type === "card" ? "cards" : first?.type === "cloze" ? "cloze" : "quiz";
+      state.view = first?.type === "card" ? "cards" : first?.type === "cloze" ? "cloze" : first?.type === "essay" ? "essay" : "quiz";
       resetPositions();
       render();
     };
@@ -5764,6 +6299,9 @@
       });
       Object.keys(state.cloze).forEach(id => {
         if (state.cloze[id]?.wrong) delete state.cloze[id];
+      });
+      Object.keys(state.essay).forEach(id => {
+        if (state.essay[id]?.wrong) delete state.essay[id];
       });
       render();
     };
