@@ -44,6 +44,10 @@
     }
 
     button:hover { border-color: #9aa7b5; }
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
     button.primary {
       background: var(--brand);
       border-color: var(--brand);
@@ -651,6 +655,7 @@
       }
       .row { gap: 6px; }
       #prevQuiz, #prevCloze, #prevCard { width: 44px; }
+      #previousSetQuiz { flex: 1 1 92px; }
       #nextQuiz, #quizMap, #nextCloze { flex: 1 1 130px; }
       #quizView .row:last-child {
         position: sticky;
@@ -709,6 +714,7 @@
 
       <div class="row">
         <button id="shuffle" title="随机排列">↻ 随机</button>
+        <button id="previousSet" title="恢复上一套章节/范围/搜索条件">上一套题</button>
         <button id="reset" title="清空本地进度">重置</button>
       </div>
     </aside>
@@ -720,6 +726,7 @@
         <div class="stat"><strong id="statQuiz">0/0 · 0%</strong><span>选择题进度 / 正确率</span></div>
         <div class="stat"><strong id="statCloze">0/0 · 0%</strong><span>填空题进度 / 正确率</span></div>
         <div class="stat"><strong id="statWrong">0</strong><span>待重练</span></div>
+        <div class="stat"><strong id="statSave">已自动保存</strong><span>本机记录 / Refresh-safe</span></div>
       </div>
 
       <div class="tabs">
@@ -764,6 +771,7 @@
           <div class="progress"><div id="quizProgress" class="bar"></div></div>
           <div class="row">
             <button id="prevQuiz" class="icon" title="上一题">‹</button>
+            <button id="previousSetQuiz" title="恢复上一套章节/范围/搜索条件">上一套题</button>
             <button id="quizMap">知识地图 / Map</button>
             <button id="nextQuiz" class="primary">下一题</button>
           </div>
@@ -4098,11 +4106,30 @@
     state.quizIndex ||= 0;
     state.clozeIndex ||= 0;
     state.shuffleSeed ||= 0;
+    state.mode ||= "all";
+    state.search ||= "";
 
     const $ = (id) => document.getElementById(id);
+    $("mode").value = state.mode;
+    $("search").value = state.search;
+    let lastSavedOk = true;
     const save = () => {
-      state.updatedAt = new Date().toISOString();
-      localStorage.setItem(storeKey, JSON.stringify(state));
+      try {
+        state.updatedAt = new Date().toISOString();
+        state.lastPractice = {
+          view: state.view,
+          chapter: state.chapter,
+          mode: state.mode,
+          search: state.search,
+          cardIndex: state.cardIndex,
+          quizIndex: state.quizIndex,
+          clozeIndex: state.clozeIndex
+        };
+        localStorage.setItem(storeKey, JSON.stringify(state));
+        lastSavedOk = true;
+      } catch {
+        lastSavedOk = false;
+      }
     };
     const norm = (s) => s.toLowerCase();
     const sourceByChapter = {
@@ -4207,6 +4234,79 @@
         out = [...out].sort((a, b) => seeded(a.id) - seeded(b.id));
       }
       return out;
+    }
+
+    function currentSetSnapshot() {
+      return {
+        chapter: state.chapter || "all",
+        mode: $("mode").value || "all",
+        search: $("search").value || "",
+        shuffleSeed: state.shuffleSeed || 0
+      };
+    }
+
+    function storedSetSnapshot() {
+      return {
+        chapter: state.chapter || "all",
+        mode: state.mode || "all",
+        search: state.search || "",
+        shuffleSeed: state.shuffleSeed || 0
+      };
+    }
+
+    function sameSet(a, b) {
+      if (!a || !b) return false;
+      return a.chapter === b.chapter
+        && a.mode === b.mode
+        && a.search === b.search
+        && (a.shuffleSeed || 0) === (b.shuffleSeed || 0);
+    }
+
+    function describeSet(set) {
+      if (!set) return "";
+      const chapterLabel = chapters.find(([id]) => id === set.chapter)?.[1] || "全部";
+      const modeText = [...$("mode").options].find(option => option.value === set.mode)?.textContent || "全部题目";
+      const parts = [chapterLabel, modeText.replace(/\s*\/.*$/, "")];
+      if (set.search) parts.push(`搜索: ${set.search}`);
+      if (set.shuffleSeed) parts.push("随机");
+      return parts.join(" · ");
+    }
+
+    function rememberPreviousSet(before) {
+      const current = currentSetSnapshot();
+      if (!sameSet(before, current)) state.previousSet = before;
+    }
+
+    function resetPositions() {
+      state.cardIndex = 0;
+      state.quizIndex = 0;
+      state.clozeIndex = 0;
+      state.showAnswer = false;
+    }
+
+    function applyPracticeSet(set) {
+      if (!set) return;
+      const current = currentSetSnapshot();
+      state.chapter = set.chapter || "all";
+      state.mode = set.mode || "all";
+      state.search = set.search || "";
+      state.shuffleSeed = set.shuffleSeed || 0;
+      $("mode").value = state.mode;
+      $("search").value = state.search;
+      state.previousSet = current;
+      state.view = "quiz";
+      resetPositions();
+      render();
+    }
+
+    function updatePreviousSetButtons() {
+      const buttons = [$("previousSet"), $("previousSetQuiz")].filter(Boolean);
+      buttons.forEach(btn => {
+        const hasPrevious = Boolean(state.previousSet);
+        btn.disabled = !hasPrevious;
+        btn.textContent = hasPrevious && btn.id === "previousSet" ? `上一套题 · ${describeSet(state.previousSet)}` : "上一套题";
+        btn.title = hasPrevious ? `恢复: ${describeSet(state.previousSet)}` : "切换章节、范围或搜索后可用";
+      });
     }
 
     function seeded(text) {
@@ -4386,10 +4486,10 @@
         const count = id === "all" ? cards.length : cards.filter(x => x.c === id).length;
         btn.innerHTML = `<b>${label}</b><span>${sub} · ${count}</span>`;
         btn.onclick = () => {
+          const before = storedSetSnapshot();
           state.chapter = id;
-          state.cardIndex = 0;
-          state.quizIndex = 0;
-          state.clozeIndex = 0;
+          resetPositions();
+          rememberPreviousSet(before);
           save();
           render();
         };
@@ -4413,6 +4513,11 @@
       const quizAll = Object.values(state.quiz);
       const clozeAll = Object.values(state.cloze);
       $("statWrong").textContent = Object.values(state.weak).filter(Boolean).length + quizAll.filter(x => x.wrong).length + clozeAll.filter(x => x.wrong).length;
+      if (lastSavedOk) {
+        $("statSave").textContent = state.updatedAt ? new Date(state.updatedAt).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}) : "已自动保存";
+      } else {
+        $("statSave").textContent = "保存失败";
+      }
     }
 
     function renderCards() {
@@ -4739,6 +4844,7 @@
       renderChapters();
       renderStats();
       renderView();
+      updatePreviousSetButtons();
       renderCards();
       renderQuiz();
       renderCloze();
@@ -4754,17 +4860,22 @@
         render();
       };
     });
+    $("search").onfocus = () => {
+      state.searchBaseSet = storedSetSnapshot();
+    };
     $("search").oninput = () => {
-      state.cardIndex = 0;
-      state.quizIndex = 0;
-      state.clozeIndex = 0;
+      const before = state.searchBaseSet || currentSetSnapshot();
+      state.search = $("search").value;
+      resetPositions();
+      rememberPreviousSet(before);
       render();
     };
     $("mode").onchange = () => {
-      state.cardIndex = 0;
-      state.quizIndex = 0;
-      state.clozeIndex = 0;
+      const before = storedSetSnapshot();
+      state.mode = $("mode").value;
+      resetPositions();
       if ($("mode").value === "calc") state.view = "quiz";
+      rememberPreviousSet(before);
       render();
     };
     $("showAnswer").onclick = () => {
@@ -4824,12 +4935,14 @@
       $("clozeInput").focus();
     };
     $("shuffle").onclick = () => {
+      const before = storedSetSnapshot();
       state.shuffleSeed = state.shuffleSeed ? 0 : Date.now();
-      state.cardIndex = 0;
-      state.quizIndex = 0;
-      state.clozeIndex = 0;
+      resetPositions();
+      rememberPreviousSet(before);
       render();
     };
+    $("previousSet").onclick = () => applyPracticeSet(state.previousSet);
+    $("previousSetQuiz").onclick = () => applyPracticeSet(state.previousSet);
     $("expandMap").onclick = () => {
       document.querySelectorAll("#mapView details").forEach(node => node.open = true);
     };
@@ -4837,12 +4950,13 @@
       document.querySelectorAll("#mapView details").forEach(node => node.open = false);
     };
     $("practiceMistakes").onclick = () => {
+      const before = storedSetSnapshot();
       const first = collectMistakes()[0];
       $("mode").value = "weak";
+      state.mode = "weak";
       state.view = first?.type === "card" ? "cards" : first?.type === "cloze" ? "cloze" : "quiz";
-      state.quizIndex = 0;
-      state.clozeIndex = 0;
-      state.cardIndex = 0;
+      resetPositions();
+      rememberPreviousSet(before);
       render();
     };
     $("clearMistakes").onclick = () => {
