@@ -682,7 +682,6 @@
       }
       .row { gap: 6px; }
       #prevQuiz, #prevCloze, #prevCard { width: 44px; }
-      #previousSetQuiz { flex: 1 1 92px; }
       #nextQuiz, #quizMap, #nextCloze { flex: 1 1 130px; }
       #quizView .row:last-child {
         position: sticky;
@@ -741,7 +740,6 @@
 
       <div class="row">
         <button id="shuffle" title="随机排列">↻ 随机</button>
-        <button id="previousSet" title="恢复上一套章节/范围/搜索条件">上一套题</button>
         <button id="reset" title="清空本地进度">重置</button>
       </div>
     </aside>
@@ -798,7 +796,6 @@
           <div class="progress"><div id="quizProgress" class="bar"></div></div>
           <div class="row">
             <button id="prevQuiz" class="icon" title="上一题">‹</button>
-            <button id="previousSetQuiz" title="恢复上一套章节/范围/搜索条件">上一套题</button>
             <button id="quizMap">知识地图 / Map</button>
             <button id="nextQuiz" class="primary">下一题</button>
           </div>
@@ -4263,77 +4260,11 @@
       return out;
     }
 
-    function currentSetSnapshot() {
-      return {
-        chapter: state.chapter || "all",
-        mode: $("mode").value || "all",
-        search: $("search").value || "",
-        shuffleSeed: state.shuffleSeed || 0
-      };
-    }
-
-    function storedSetSnapshot() {
-      return {
-        chapter: state.chapter || "all",
-        mode: state.mode || "all",
-        search: state.search || "",
-        shuffleSeed: state.shuffleSeed || 0
-      };
-    }
-
-    function sameSet(a, b) {
-      if (!a || !b) return false;
-      return a.chapter === b.chapter
-        && a.mode === b.mode
-        && a.search === b.search
-        && (a.shuffleSeed || 0) === (b.shuffleSeed || 0);
-    }
-
-    function describeSet(set) {
-      if (!set) return "";
-      const chapterLabel = chapters.find(([id]) => id === set.chapter)?.[1] || "全部";
-      const modeText = [...$("mode").options].find(option => option.value === set.mode)?.textContent || "全部题目";
-      const parts = [chapterLabel, modeText.replace(/\s*\/.*$/, "")];
-      if (set.search) parts.push(`搜索: ${set.search}`);
-      if (set.shuffleSeed) parts.push("随机");
-      return parts.join(" · ");
-    }
-
-    function rememberPreviousSet(before) {
-      const current = currentSetSnapshot();
-      if (!sameSet(before, current)) state.previousSet = before;
-    }
-
     function resetPositions() {
       state.cardIndex = 0;
       state.quizIndex = 0;
       state.clozeIndex = 0;
       state.showAnswer = false;
-    }
-
-    function applyPracticeSet(set) {
-      if (!set) return;
-      const current = currentSetSnapshot();
-      state.chapter = set.chapter || "all";
-      state.mode = set.mode || "all";
-      state.search = set.search || "";
-      state.shuffleSeed = set.shuffleSeed || 0;
-      $("mode").value = state.mode;
-      $("search").value = state.search;
-      state.previousSet = current;
-      state.view = "quiz";
-      resetPositions();
-      render();
-    }
-
-    function updatePreviousSetButtons() {
-      const buttons = [$("previousSet"), $("previousSetQuiz")].filter(Boolean);
-      buttons.forEach(btn => {
-        const hasPrevious = Boolean(state.previousSet);
-        btn.disabled = !hasPrevious;
-        btn.textContent = hasPrevious && btn.id === "previousSet" ? `上一套题 · ${describeSet(state.previousSet)}` : "上一套题";
-        btn.title = hasPrevious ? `恢复: ${describeSet(state.previousSet)}` : "切换章节、范围或搜索后可用";
-      });
     }
 
     function seeded(text) {
@@ -4513,10 +4444,8 @@
         const count = id === "all" ? cards.length : cards.filter(x => x.c === id).length;
         btn.innerHTML = `<b>${label}</b><span>${sub} · ${count}</span>`;
         btn.onclick = () => {
-          const before = storedSetSnapshot();
           state.chapter = id;
           resetPositions();
-          rememberPreviousSet(before);
           save();
           render();
         };
@@ -4871,7 +4800,6 @@
       renderChapters();
       renderStats();
       renderView();
-      updatePreviousSetButtons();
       renderCards();
       renderQuiz();
       renderCloze();
@@ -4887,22 +4815,15 @@
         render();
       };
     });
-    $("search").onfocus = () => {
-      state.searchBaseSet = storedSetSnapshot();
-    };
     $("search").oninput = () => {
-      const before = state.searchBaseSet || currentSetSnapshot();
       state.search = $("search").value;
       resetPositions();
-      rememberPreviousSet(before);
       render();
     };
     $("mode").onchange = () => {
-      const before = storedSetSnapshot();
       state.mode = $("mode").value;
       resetPositions();
       if ($("mode").value === "calc") state.view = "quiz";
-      rememberPreviousSet(before);
       render();
     };
     $("showAnswer").onclick = () => {
@@ -4962,14 +4883,10 @@
       $("clozeInput").focus();
     };
     $("shuffle").onclick = () => {
-      const before = storedSetSnapshot();
       state.shuffleSeed = state.shuffleSeed ? 0 : Date.now();
       resetPositions();
-      rememberPreviousSet(before);
       render();
     };
-    $("previousSet").onclick = () => applyPracticeSet(state.previousSet);
-    $("previousSetQuiz").onclick = () => applyPracticeSet(state.previousSet);
     $("expandMap").onclick = () => {
       document.querySelectorAll("#mapView details").forEach(node => node.open = true);
     };
@@ -4977,13 +4894,11 @@
       document.querySelectorAll("#mapView details").forEach(node => node.open = false);
     };
     $("practiceMistakes").onclick = () => {
-      const before = storedSetSnapshot();
       const first = collectMistakes()[0];
       $("mode").value = "weak";
       state.mode = "weak";
       state.view = first?.type === "card" ? "cards" : first?.type === "cloze" ? "cloze" : "quiz";
       resetPositions();
-      rememberPreviousSet(before);
       render();
     };
     $("clearMistakes").onclick = () => {
