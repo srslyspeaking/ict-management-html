@@ -490,9 +490,115 @@
     }
 
     .ai-output {
-      white-space: pre-wrap;
       line-height: 1.6;
       font-size: 15px;
+    }
+
+    .ai-output p {
+      margin: 0 0 10px;
+    }
+
+    .diagnosis-stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 8px;
+    }
+
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #f8faf8;
+    }
+
+    .kpi strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .kpi span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .chart {
+      display: grid;
+      gap: 9px;
+    }
+
+    .chart-row {
+      display: grid;
+      grid-template-columns: minmax(86px, 160px) minmax(0, 1fr) 52px;
+      gap: 8px;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .chart-label {
+      color: var(--ink);
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .chart-track {
+      height: 12px;
+      border-radius: 999px;
+      background: #e8ede8;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.04);
+    }
+
+    .chart-fill {
+      height: 100%;
+      min-width: 3px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #0f766e, #d97706);
+    }
+
+    .chart-value {
+      color: var(--muted);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .review-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .review-card strong {
+      color: var(--ink);
+    }
+
+    .review-card small {
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .ai-rendered {
+      display: grid;
+      gap: 12px;
+    }
+
+    .ai-rendered h4 {
+      margin: 8px 0 0;
+      font-size: 16px;
+    }
+
+    .ai-rendered .review-card {
+      background: #fbfcfb;
     }
 
     .ai-status {
@@ -3520,9 +3626,11 @@
           const distractors = distractorsFor(card);
           if (!distractors) return null;
           const isDefinition = card.t === "Stuvia Definition";
-          const question = isDefinition
-            ? card.q
-            : `EN: Which answer best matches this Stuvia review question? ${card.q.replace(/^EN:\s*/i, "")}`;
+          const cleanQuestion = card.q
+            .replace(/^EN:\s*/i, "")
+            .replace(/^Which answer best matches this Stuvia review question\?\s*/i, "")
+            .trim();
+          const question = isDefinition ? card.q : `EN: ${cleanQuestion}`;
           return {
             c: card.c,
             t: "Stuvia MCQ",
@@ -4980,6 +5088,88 @@
       return [...cardMistakes, ...quizMistakes, ...clozeMistakes];
     }
 
+    const chapterReviewGuide = {
+      "2": {
+        name: "Information technology in a business environment",
+        core: "Organization as a system; business processes, value chain/value system/supply chain; information system vs computer system; data processing, task automation, integrated information systems; operational/tactical/strategic benefits and competitive advantage.",
+        traps: "把 IT 当成单纯 hardware/software；混淆 business process、business function、activity；看到 CRM/ERP 就按系统名称判断 benefit，而不是按 business effect 判断。",
+        action: "复习时按三步回答：business process/value creation -> information system support -> benefit level or competitive advantage."
+      },
+      "3": {
+        name: "Framework for information management",
+        core: "Framework purpose; information-system domains: business process, data, application, infrastructure; life-cycle view; IT management vs IT governance.",
+        traps: "只看 application domain，忽略 process/data/infrastructure；把 governance 和 daily management 混在一起。",
+        action: "每道框架题都问自己：这是四个 domains 中哪一层？是 lifecycle work、management activity，还是 governance decision?"
+      },
+      "13": {
+        name: "IT management: services, sourcing, standards",
+        core: "IT as a service; service types/classes/service unit; IT department position; outsourcing; cloud computing; ITIL, ISO/IEC 20000, IT4IT, CMMI-SVC; cost-volume relations such as fixed, linear, step, and economies of scale.",
+        traps: "service unit 选得太技术化；混淆 ITIL best practice 与 ISO/IEC 20000 certification；把 Moore's law 和 Grosch's law 混淆；业务量到 IT 资源量不一定线性。",
+        action: "把题目中的 business volume 先翻译成 service consumption，再翻译成 resource/cost pattern；标准题先写全称和用途。"
+      },
+      "14": {
+        name: "Services delivery management",
+        core: "Service catalog; service request handling; services planning; link between business volume, service consumption, resource capacity, and forecasts.",
+        traps: "把 out-of-catalog request 当普通 service request；只用 trend analysis，忽视用户预测和业务结构变化；不区分 service definition 与 resource planning。",
+        action: "遇到请求题先判断是否在 catalog、是否授权、是否标准；遇到规划题画 business volume -> service volume -> capacity chain."
+      },
+      "15": {
+        name: "Financial management",
+        core: "IT services cost calculation; direct/indirect cost; service-unit costing; full cost recovery; charge-out principles; NPV/IRR and investment value.",
+        traps: "NPV 忘记 discount；把 planned volume 与 actual volume 混用；charge-out 只追求准确而忽视 predictable/fair/verifiable/consistent；不会把 overhead 分摊到 service units。",
+        action: "计算题先写公式再代数；charge-out 题从 cost object、cost driver、service unit、fairness 四点判断。"
+      },
+      "16": {
+        name: "Operations management",
+        core: "Resource tracking; resource item database; change handling: standard/normal/urgent; event, incident, problem handling; scope and impact.",
+        traps: "把 routine-looking shared infrastructure change 误判为 standard；把 incident recovery 与 problem/root cause 混淆；resource database 忽略 relationships/dependencies。",
+        action: "变更题看风险和 shared infrastructure impact；故障题看 event -> incident -> problem；impact analysis 题找 resource relationships."
+      },
+      "17": {
+        name: "Quality management",
+        core: "Service levels; definition with period, percentage, measured parameter, threshold; availability/performance/capacity/support; operational levels; SLA monitoring and proportional responses.",
+        traps: "技术参数写得很精确就以为是好 SLA；把 maximum limit 当 minimum guarantee；忽略 measurement period；MTBF/MTTR availability 公式不熟。",
+        action: "SLA 题逐项检查 measurable, precise, period-based, service-oriented, minimum quality；计算题写 MTBF/MTTR 或 downtime before judging."
+      },
+      "18": {
+        name: "Supplier management",
+        core: "Different suppliers; strategic/tactical/operational/commodity classification; supplier selection, evaluation, contracts, monitoring, risk management.",
+        traps: "按价格或临时紧急程度分类 supplier；没看 replaceability、business impact、dependency 和 long-term relationship。",
+        action: "供应商题用四问：critical? replaceable? integrated? long-term strategic knowledge/risk?"
+      },
+      "19": {
+        name: "Human resources management",
+        core: "IT personnel roles: management, architecture, service delivery, technical/administrative; IT department structure; CIO, service desk, architect, operations/support roles.",
+        traps: "把 service desk、system administrator、business/enterprise architect、financial manager 的职责混淆；角色题只看职位名不看 activity。",
+        action: "角色题把动词圈出来：plan/manage/report/design/support/configure/coordinate，再匹配 function."
+      },
+      "20": {
+        name: "IT governance",
+        core: "ISO/IEC 38500 Evaluate-Direct-Monitor; COBIT goals cascade and enablers; governance vs management; IT decision-making and decision rights; funding and spending profile cases.",
+        traps: "COBIT 只背缩写不懂 cascade；把 governance/management 混同；application decisions 缺 user representatives；funding mechanism 不按 measurability/accountability/complexity 判断。",
+        action: "治理题先判断 decision right；COBIT 题写 stakeholder needs -> enterprise goals -> IT goals -> processes/enablers；funding 题看 overhead/charge-out/hybrid 的适用条件。"
+      },
+      "21": {
+        name: "Business-IT alignment",
+        core: "Strategic Impact Grid; Strategic Alignment Model; three-level alignment; strategic focus points: financial, operational, product, customer; strategic attitude toward IT; enterprise architecture; operating model with standardization/integration.",
+        traps: "看到公司名就套模板，不看题干 clue；混淆 Strategic Impact Grid、SAM、focus point、operating model；customer/product/operational/financial focus 判断依据不清。",
+        action: "案例题先标 clue words：cost/ROI, production/compliance, product innovation, customer intimacy；再选 focus/SAM/Grid/operating model."
+      }
+    };
+
+    function itemMisconception(item) {
+      const text = norm(`${item.topic || item.t || ""} ${item.question || item.q || ""} ${item.explanation || item.e || ""}`);
+      if (text.includes("npv") || text.includes("irr") || text.includes("cash flow") || text.includes("discount")) return "可能薄弱点：financial evaluation。检查是否先写 NPV/IRR 公式、是否正确 discount future cash flows。";
+      if (text.includes("unit cost") || text.includes("full cost") || text.includes("charge-out") || text.includes("overhead")) return "可能薄弱点：service costing / charge-out。检查 cost driver、service unit、planned vs actual volume、fairness/predictability。";
+      if (text.includes("sla") || text.includes("service level") || text.includes("latency") || text.includes("bandwidth") || text.includes("availability")) return "可能薄弱点：SLA wording。检查 period + percentage + service-facing parameter + threshold + minimum guarantee。";
+      if (text.includes("cobit") || text.includes("cascade") || text.includes("governance")) return "可能薄弱点：COBIT/governance。不要停在定义，写出 goals cascade 或 Evaluate-Direct-Monitor/decision rights。";
+      if (text.includes("supplier")) return "可能薄弱点：supplier classification。用 criticality、replaceability、integration、long-term relationship 判断。";
+      if (text.includes("sam") || text.includes("strategic impact") || text.includes("focus") || text.includes("operating model")) return "可能薄弱点：business-IT alignment case reading。先圈 clue words，再判断模型维度。";
+      if (text.includes("change") || text.includes("incident") || text.includes("problem") || text.includes("resource")) return "可能薄弱点：operations logic。分清 standard/normal/urgent change, event/incident/problem, resource dependency。";
+      if (text.includes("service catalog") || text.includes("request") || text.includes("forecast") || text.includes("planning")) return "可能薄弱点：service delivery planning。先看 catalog/authorization，再画 business volume -> service consumption -> resource capacity。";
+      return "可能薄弱点：概念没有和题干场景绑定。复盘时把英文关键词、模型维度和判断依据写出来。";
+    }
+
     function reviewDataset() {
       const quizItems = allItems(quiz, "quiz");
       const clozeItems = allItems(cloze, "cloze");
@@ -5050,6 +5240,8 @@
         topic: entry.item.t,
         question: entry.item.q,
         explanation: entry.item.e || entry.item.a || "",
+        misconception: itemMisconception(entry.item),
+        chapterGuide: chapterReviewGuide[entry.item.c] || null,
         source: sourceFor(entry.item, entry.type)
       }));
       return {
@@ -5064,7 +5256,8 @@
         },
         chapters: formatRows(Object.values(chapterStats)),
         topics: formatRows(Object.values(topicStats)).slice(0, 18),
-        mistakes
+        mistakes,
+        chapterReviewGuide
       };
     }
 
@@ -5082,7 +5275,11 @@
       } else {
         weakChapters.forEach(row => {
           const accuracy = row.accuracy === null ? "未统计" : `${row.accuracy}%`;
-          lines.push(`- ${row.label}: 正确率 ${accuracy}, 错 ${row.wrong}, 不熟卡 ${row.weakCards}, 优先级 ${row.priority}`);
+          const guide = chapterReviewGuide[row.label.replace("Chapter ", "")] || {};
+          lines.push(`- ${row.label} · ${guide.name || "Course chapter"}: 正确率 ${accuracy}, 错 ${row.wrong}, 不熟卡 ${row.weakCards}, 优先级 ${row.priority}`);
+          if (guide.core) lines.push(`  书上核心：${guide.core}`);
+          if (guide.traps) lines.push(`  常见误区：${guide.traps}`);
+          if (guide.action) lines.push(`  复习动作：${guide.action}`);
         });
       }
       lines.push("");
@@ -5092,7 +5289,10 @@
       } else {
         weakTopics.forEach(row => {
           const accuracy = row.accuracy === null ? "未统计" : `${row.accuracy}%`;
+          const chapter = row.label.split(" · ")[0];
+          const guide = chapterReviewGuide[chapter] || {};
           lines.push(`- ${row.label}: 正确率 ${accuracy}, 错 ${row.wrong}, 不熟卡 ${row.weakCards}`);
+          if (guide.action) lines.push(`  怎么补：${guide.action}`);
         });
       }
       lines.push("");
@@ -5102,25 +5302,143 @@
       } else {
         data.mistakes.slice(0, 6).forEach((item, index) => {
           lines.push(`${index + 1}. Ch ${item.chapter} · ${item.topic}: ${item.question}`);
+          lines.push(`   错因判断：${item.misconception}`);
           lines.push(`   复盘点：${item.explanation}`);
         });
       }
+      lines.push("");
+      lines.push("下一轮建议：先做“只练错题”，再做“只练计算选择题”，最后做 Chapter 20/21 hard cases；每道错题必须写出英文关键词和判断依据。");
       return lines.join("\n");
     }
 
+    function chartHtml(rows, valueKey, options = {}) {
+      const max = Math.max(1, ...rows.map(row => Number(row[valueKey]) || 0));
+      return `<div class="chart">${rows.map(row => {
+        const value = Number(row[valueKey]) || 0;
+        const width = Math.max(3, Math.round(value / max * 100));
+        const label = options.label ? options.label(row) : row.label;
+        const suffix = options.suffix || "";
+        return `
+          <div class="chart-row">
+            <div class="chart-label">${escapeHtml(label)}</div>
+            <div class="chart-track"><div class="chart-fill" style="width:${width}%"></div></div>
+            <div class="chart-value">${escapeHtml(value)}${suffix}</div>
+          </div>
+        `;
+      }).join("")}</div>`;
+    }
+
+    function localReviewHtml(data = reviewDataset()) {
+      const overall = data.overall;
+      const weakChapters = data.chapters.filter(x => x.done || x.weakCards).slice(0, 7);
+      const weakTopics = data.topics.filter(x => x.done || x.weakCards).slice(0, 8);
+      const chapterCards = weakChapters.length ? weakChapters.map(row => {
+        const chapter = row.label.replace("Chapter ", "");
+        const guide = chapterReviewGuide[chapter] || {};
+        const accuracy = row.accuracy === null ? "未统计" : `${row.accuracy}%`;
+        return `
+          <div class="review-card">
+            <strong>${escapeHtml(row.label)} · ${escapeHtml(guide.name || "Course chapter")}</strong>
+            <small>正确率 ${escapeHtml(accuracy)} · 错 ${row.wrong} · 不熟卡 ${row.weakCards} · 优先级 ${row.priority}</small>
+            <small><strong>书上核心：</strong>${escapeHtml(guide.core || "按本章题目继续累计记录。")}</small>
+            <small><strong>常见误区：</strong>${escapeHtml(guide.traps || "暂无足够错题判断。")}</small>
+            <small><strong>复习动作：</strong>${escapeHtml(guide.action || "先做本章未做题，再回看错题。")}</small>
+          </div>
+        `;
+      }).join("") : `<div class="review-card"><strong>还没有足够记录</strong><small>先做一轮选择题和填空题，图表会自动出现。</small></div>`;
+      const topicCards = weakTopics.length ? weakTopics.map(row => {
+        const accuracy = row.accuracy === null ? "未统计" : `${row.accuracy}%`;
+        return `<div class="review-card"><strong>${escapeHtml(row.label)}</strong><small>正确率 ${escapeHtml(accuracy)} · 错 ${row.wrong} · 不熟卡 ${row.weakCards} · 优先级 ${row.priority}</small></div>`;
+      }).join("") : `<div class="review-card"><strong>暂无主题数据</strong><small>做题后会按 topic 自动聚类。</small></div>`;
+      const mistakeCards = data.mistakes.length ? data.mistakes.slice(0, 6).map((item, index) => `
+        <div class="review-card">
+          <strong>${index + 1}. Ch ${escapeHtml(item.chapter)} · ${escapeHtml(item.topic)}</strong>
+          <small>${escapeHtml(item.question)}</small>
+          <small><strong>错因判断：</strong>${escapeHtml(item.misconception)}</small>
+          <small><strong>复盘点：</strong>${escapeHtml(item.explanation)}</small>
+        </div>
+      `).join("") : `<div class="review-card"><strong>当前没有错题</strong><small>可以切到“只练难题”或“只练计算选择题”制造诊断样本。</small></div>`;
+      const chapterChart = weakChapters.length ? chartHtml(weakChapters, "priority", {label: row => row.label}) : "";
+      const topicChart = weakTopics.length ? chartHtml(weakTopics, "priority", {label: row => row.label}) : "";
+      return `
+        <div class="diagnosis-stack">
+          <div class="kpi-grid">
+            <div class="kpi"><strong>${overall.quizDone}</strong><span>选择题已做</span></div>
+            <div class="kpi"><strong>${overall.quizWrong}</strong><span>选择题错题</span></div>
+            <div class="kpi"><strong>${overall.clozeDone}</strong><span>填空题已做</span></div>
+            <div class="kpi"><strong>${overall.clozeWrong}</strong><span>填空题错题</span></div>
+            <div class="kpi"><strong>${overall.weakCards}</strong><span>不熟卡片</span></div>
+          </div>
+          <div class="review-card">
+            <strong>章节薄弱度图</strong>
+            <small>数值越高，代表错题、不熟卡、覆盖不足越需要优先处理。</small>
+            ${chapterChart || "<small>暂无图表数据。</small>"}
+          </div>
+          <div class="review-card">
+            <strong>主题优先级图</strong>
+            <small>用于决定下一轮具体刷哪个 topic，而不是只看章节名。</small>
+            ${topicChart || "<small>暂无图表数据。</small>"}
+          </div>
+          <div>
+            <div class="meta"><span class="pill">Priority chapters</span></div>
+            ${chapterCards}
+          </div>
+          <div>
+            <div class="meta"><span class="pill">Priority topics</span></div>
+            ${topicCards}
+          </div>
+          <div>
+            <div class="meta"><span class="pill">Mistake explanation seeds</span></div>
+            ${mistakeCards}
+          </div>
+          <div class="review-card">
+            <strong>下一轮建议</strong>
+            <small>先做“只练错题”，再做“只练计算选择题”，最后做 Chapter 20/21 hard cases。每道错题必须写出英文关键词和判断依据。</small>
+          </div>
+        </div>
+      `;
+    }
+
+    function cleanMarkdownText(text) {
+      return String(text || "")
+        .replace(/^#{1,6}\s*/gm, "")
+        .replace(/^\s*[-*]\s+/gm, "")
+        .replace(/\*\*([^*]+)\*\*/g, "$1")
+        .replace(/\*([^*]+)\*/g, "$1")
+        .replace(/`([^`]+)`/g, "$1")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+    }
+
+    function formattedReviewHtml(text) {
+      const clean = cleanMarkdownText(text);
+      const blocks = clean.split(/\n\s*\n/).filter(Boolean);
+      if (!blocks.length) return `<div class="review-card"><strong>没有输出</strong><small>请稍后重试。</small></div>`;
+      return `<div class="ai-rendered">${blocks.map(block => {
+        const lines = block.split("\n").map(line => line.trim()).filter(Boolean);
+        if (lines.length === 1 && /^(\d+\.?\s*)?[\u4e00-\u9fa5A-Za-z].{0,36}$/.test(lines[0])) {
+          return `<h4>${escapeHtml(lines[0].replace(/^\d+\.?\s*/, ""))}</h4>`;
+        }
+        return `<div class="review-card">${lines.map(line => `<small>${escapeHtml(line)}</small>`).join("")}</div>`;
+      }).join("")}</div>`;
+    }
+
     function renderAiReview() {
-      $("localDiagnosis").textContent = localReviewText();
+      $("localDiagnosis").innerHTML = localReviewHtml();
     }
 
     function reviewPrompt(data) {
       return [
         "You are a bilingual ICT Service Management exam tutor. The student studies for an English exam but prefers Chinese explanations.",
+        "Base your tutoring on the book structure of The IT Management Essentials, especially chapters 2, 3, and 13-21.",
+        "Use the provided chapterReviewGuide to avoid vague comments. When diagnosing weakness, name the exact model/formula/distinction that is likely weak.",
         "Analyze the student's local quiz records. Produce:",
-        "1. Weakness diagnosis by chapter/topic.",
-        "2. A targeted review outline for the next study session.",
-        "3. Detailed explanations for the mistakes, in Chinese with key English terms preserved.",
-        "4. A short drill plan: what to do first, second, third.",
+        "1. Weakness diagnosis by chapter/topic, including the likely misconception.",
+        "2. A targeted review outline for the next study session, organized by book concepts rather than generic chapter names.",
+        "3. Detailed explanations for the mistakes: explain why the correct answer is correct, why the likely wrong reasoning is tempting, and what English keywords the student should recognize.",
+        "4. A short drill plan: what to do first, second, third, including calculation drills if Chapter 13/15/17 are weak.",
         "Be practical and exam-oriented. Do not invent facts outside the provided course data.",
+        "Output in Chinese, but preserve key English terms such as service unit, service catalog, NPV, SLA, COBIT goals cascade, Strategic Alignment Model, Strategic Impact Grid, operating model.",
         "",
         `Student note: ${$("aiNotes").value.trim() || "(none)"}`,
         "",
@@ -5132,9 +5450,9 @@
     async function runAiReview() {
       const apiKey = $("apiKey").value.trim();
       const data = reviewDataset();
-      $("localDiagnosis").textContent = localReviewText(data);
+      $("localDiagnosis").innerHTML = localReviewHtml(data);
       if (!apiKey) {
-        $("aiOutput").textContent = `${localReviewText(data)}\n\n要生成更细的 GPT 讲解，请临时粘贴 API key。注意：不要把 key 写进 GitHub 源码。`;
+        $("aiOutput").innerHTML = formattedReviewHtml(`${localReviewText(data)}\n\n要生成更细的 GPT 讲解，请临时粘贴 API key。注意：不要把 key 写进 GitHub 源码。`);
         $("aiStatus").textContent = "未填写 API key，已生成本地复盘。";
         return;
       }
@@ -5162,10 +5480,10 @@
           .map(part => part.text || "")
           .join("\n")
           .trim();
-        $("aiOutput").textContent = text || "GPT 返回为空；请换模型或稍后重试。";
+        $("aiOutput").innerHTML = formattedReviewHtml(text || "GPT 返回为空；请换模型或稍后重试。");
         $("aiStatus").textContent = "复盘已生成。";
       } catch (error) {
-        $("aiOutput").textContent = `${localReviewText(data)}\n\nGPT 请求失败：${error.message}\n\n可以先用上面的本地复盘继续学。`;
+        $("aiOutput").innerHTML = formattedReviewHtml(`${localReviewText(data)}\n\nGPT 请求失败：${error.message}\n\n可以先用上面的本地复盘继续学。`);
         $("aiStatus").textContent = "GPT 请求失败。";
       } finally {
         $("runAiReview").disabled = false;
@@ -5178,7 +5496,7 @@
         await navigator.clipboard.writeText(text);
         $("aiStatus").textContent = "复盘数据已复制，可以粘贴到 ChatGPT。";
       } catch {
-        $("aiOutput").textContent = text;
+        $("aiOutput").innerHTML = formattedReviewHtml(text);
         $("aiStatus").textContent = "浏览器不允许复制，已把复盘数据显示在输出区。";
       }
     }
