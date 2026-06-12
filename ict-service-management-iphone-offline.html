@@ -311,6 +311,79 @@
       color: #513224;
       border-radius: 6px;
     }
+    .term {
+      color: var(--brand);
+      border-bottom: 1px dotted currentColor;
+      font-weight: 750;
+      cursor: help;
+    }
+    .option .term {
+      color: inherit;
+      border-bottom-color: currentColor;
+      text-decoration: underline dotted;
+      text-underline-offset: 3px;
+    }
+    .term-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(15, 23, 32, 0.22);
+    }
+    .term-popover {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      z-index: 41;
+      width: min(420px, calc(100vw - 28px));
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 18px 48px rgba(20, 28, 36, 0.24);
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+    }
+    .term-popover[hidden],
+    .term-overlay[hidden] {
+      display: none;
+    }
+    .term-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 12px;
+    }
+    .term-head h3 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+    .term-head span {
+      color: var(--muted);
+      font-size: 12px;
+      display: block;
+      margin-top: 2px;
+    }
+    .term-close {
+      width: 34px;
+      min-height: 34px;
+      padding: 0;
+      border-radius: 999px;
+      flex: 0 0 auto;
+    }
+    .term-body {
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .term-body strong {
+      color: var(--ink);
+    }
+    .term-tip {
+      border-top: 1px solid var(--line);
+      padding-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
     .cloze-input {
       display: grid;
       gap: 8px;
@@ -680,6 +753,16 @@
         overflow: auto;
         font-size: 11px;
       }
+      .term-popover {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        width: auto;
+        border-radius: 12px;
+        padding: 14px;
+      }
+      .term-head h3 { font-size: 17px; }
+      .term-body { font-size: 13px; }
       .row { gap: 6px; }
       #prevQuiz, #prevCloze, #prevCard { width: 44px; }
       #nextQuiz, #quizMap, #nextCloze { flex: 1 1 130px; }
@@ -842,6 +925,18 @@
         <div id="mapGrid" class="mind-map"></div>
       </section>
     </main>
+  </div>
+  <div id="termOverlay" class="term-overlay" hidden></div>
+  <div id="termPopover" class="term-popover" role="dialog" aria-modal="true" aria-labelledby="termTitle" hidden>
+    <div class="term-head">
+      <div>
+        <h3 id="termTitle"></h3>
+        <span id="termChapter"></span>
+      </div>
+      <button id="termClose" class="term-close" aria-label="关闭术语解释">×</button>
+    </div>
+    <div id="termBody" class="term-body"></div>
+    <div id="termTip" class="term-tip"></div>
   </div>
 
   <script>
@@ -4157,6 +4252,96 @@
       }
     };
     const norm = (s) => s.toLowerCase();
+    const glossary = [
+      {id:"business-process", term:"Business process", zh:"业务流程", chapter:"Chapter 2", aliases:["business process", "business processes"], explain:"A structured set of activities performed in an organization to create value for customers, citizens, or internal stakeholders.", tip:"Exam cue: distinguish process from activity and business function."},
+      {id:"activity", term:"Activity", zh:"活动", chapter:"Chapter 2", aliases:["activity", "activities"], explain:"A smaller unit of work inside a business process.", tip:"In classification questions, activity is more granular than a process."},
+      {id:"business-function", term:"Business function", zh:"业务职能", chapter:"Chapter 2", aliases:["business function", "business functions"], explain:"A grouping of related business processes, often corresponding to areas such as sales, finance, or HR.", tip:"Function groups processes; process sequences activities."},
+      {id:"porter-value-chain", term:"Porter value chain", zh:"波特价值链", chapter:"Chapter 2", aliases:["porter value chain", "value chain", "primary activity", "primary activities", "support activity", "support activities"], explain:"A model separating activities that directly create customer value from supporting activities that enable them.", tip:"Primary: inbound logistics, operations, outbound logistics, marketing and sales, service."},
+      {id:"supply-chain", term:"Supply chain", zh:"供应链", chapter:"Chapter 2", aliases:["supply chain", "value system", "scor"], explain:"The wider chain of organizations, resources, and processes involved in moving from raw materials to delivered products or services.", tip:"SCOR process groups: Plan, Source, Make, Deliver, Return, Enable."},
+      {id:"information-system", term:"Information system", zh:"信息系统", chapter:"Chapter 2", aliases:["information system", "information systems", "computer system", "computer systems"], explain:"A socio-technical system combining devices, services, data, applications, and people to create, store, manage, and process information.", tip:"Computer system is narrower; information system includes people and services too."},
+      {id:"operational-benefit", term:"Operational benefit", zh:"运营收益", chapter:"Chapter 2", aliases:["operational benefit", "operational benefits"], explain:"Benefit that improves day-to-day efficiency, speed, cost, or quality of operational work.", tip:"Often quantifiable, but not always strategic."},
+      {id:"tactical-benefit", term:"Tactical benefit", zh:"战术收益", chapter:"Chapter 2", aliases:["tactical benefit", "tactical benefits"], explain:"Benefit that helps the organization better achieve existing goals or manage processes.", tip:"Middle layer between operational efficiency and strategic change."},
+      {id:"strategic-benefit", term:"Strategic benefit", zh:"战略收益", chapter:"Chapter 2", aliases:["strategic benefit", "strategic benefits"], explain:"Benefit that changes or creates business strategy, competitive positioning, or the business model.", tip:"Exam cue: new digital business model usually means strategic benefit."},
+      {id:"framework", term:"Framework", zh:"框架", chapter:"Chapter 3", aliases:["framework", "reference model"], explain:"A shared structure of terminology, concepts, and relationships used to organize IT management knowledge and work products.", tip:"Framework questions often ask why common language is needed."},
+      {id:"it-governance", term:"IT governance", zh:"IT 治理", chapter:"Chapter 3 / 20", aliases:["it governance", "governance"], explain:"The structures and decision rights that ensure IT supports business objectives and does the right things.", tip:"Governance is about direction and oversight; management is about operating and delivering."},
+      {id:"it-management", term:"IT management", zh:"IT 管理", chapter:"Chapter 3", aliases:["it management"], explain:"The management of the IT function, IT services, resources, operations, development, and support.", tip:"Contrast with IT governance: management runs IT; governance steers IT."},
+      {id:"service-unit", term:"Service unit", zh:"服务计量单位", chapter:"Chapter 13 / 15", aliases:["service unit", "service units", "subscription-based", "volume-based"], explain:"The unit used to measure consumption of an IT service, such as PC-year, mailbox-month, printed page, or GB storage.", tip:"Subscription units are easier; volume units follow intensity of use."},
+      {id:"cloud-service-models", term:"Cloud service models", zh:"云服务模型", chapter:"Chapter 13", aliases:["iaas", "paas", "saas", "infrastructure as a service", "platform as a service", "software as a service", "cloud service model", "cloud service models"], explain:"IaaS provides infrastructure capacity; PaaS adds platform/system software; SaaS delivers complete applications.", tip:"Exam cue: customer installs own app on provider platform = PaaS."},
+      {id:"groschs-law", term:"Grosch's law", zh:"格罗什定律", chapter:"Chapter 13 / 15", aliases:["grosch", "grosch's law", "groschs law", "economies of scale"], explain:"A scaling idea that larger computing capacity can be proportionally cheaper, lowering unit cost as capacity grows.", tip:"Useful for cost/capacity calculation questions."},
+      {id:"npv", term:"NPV", zh:"净现值", chapter:"Chapter 15", aliases:["npv", "net present value", "discount rate", "cash flow", "cash flows"], explain:"Net present value discounts future cash flows to today and subtracts the initial investment.", tip:"Positive NPV means the project creates financial value under the chosen discount rate."},
+      {id:"charge-out", term:"Charge-out", zh:"成本分摊/内部计费", chapter:"Chapter 15 / 20", aliases:["charge-out", "charge out", "cost recovery", "full cost recovery"], explain:"A mechanism to allocate IT service costs to users, departments, or business units according to chosen drivers.", tip:"Good charge-out should be understandable, fair, predictable, verifiable, and consistent."},
+      {id:"change-types", term:"Change types", zh:"变更类型", chapter:"Chapter 16", aliases:["standard change", "normal change", "urgent change", "change request"], explain:"Standard changes are pre-approved and routine; normal changes need evaluation; urgent changes are expedited for time-critical needs.", tip:"Shared infrastructure impact often pushes a request toward normal change."},
+      {id:"incident-problem", term:"Incident / Problem", zh:"事件/问题", chapter:"Chapter 16", aliases:["incident", "incidents", "problem", "problems", "event", "events"], explain:"An event is a significant state change. An incident is an unwanted interruption or degradation. A problem is the underlying cause of one or more incidents.", tip:"Problem is about root cause, not just one user report."},
+      {id:"sla", term:"SLA / Service level", zh:"服务级别", chapter:"Chapter 17", aliases:["sla", "service level", "service levels", "availability", "mtbf", "mttr"], explain:"A service level is a quantitative minimum quality requirement for a service, usually with a period, percentage, parameter, and threshold.", tip:"Good SLA wording is measurable, precise, period-based, service-oriented, and minimum-quality based."},
+      {id:"supplier-classification", term:"Supplier classification", zh:"供应商分类", chapter:"Chapter 18", aliases:["strategic supplier", "tactical supplier", "operational supplier", "commodity supplier", "supplier classification"], explain:"Suppliers can be classified by importance and risk, from commodity suppliers to strategic partners.", tip:"Look at business impact, dependency, and substitutability."},
+      {id:"cobit", term:"COBIT", zh:"COBIT 治理框架", chapter:"Chapter 20", aliases:["cobit", "goals cascade", "enabler", "enablers"], explain:"A governance and management framework for enterprise IT. The goals cascade links stakeholder needs to enterprise goals, IT-related goals, and enabler goals.", tip:"Exam cue: business goals -> IT goals -> IT processes/enablers."},
+      {id:"iso-38500", term:"ISO/IEC 38500", zh:"IT 治理标准", chapter:"Chapter 20", aliases:["iso/iec 38500", "iso 38500", "evaluate", "direct", "monitor"], explain:"A standard for governance of IT. Its core governance tasks are Evaluate, Direct, and Monitor.", tip:"Do not confuse with ISO/IEC 20000, which concerns service management systems."},
+      {id:"strategic-impact-grid", term:"Strategic Impact Grid", zh:"战略影响网格", chapter:"Chapter 21", aliases:["strategic impact grid", "support mode", "factory mode", "turnaround mode", "strategic mode"], explain:"A model classifying IT strategy by current operational dependence and future strategic importance of IT.", tip:"Support low/low; Factory high current/low future; Turnaround low current/high future; Strategic high/high."},
+      {id:"sam", term:"Strategic Alignment Model", zh:"战略一致性模型", chapter:"Chapter 21", aliases:["strategic alignment model", "sam", "strategy execution", "technology transformation", "competitive potential", "service level perspective"], explain:"A model explaining alignment between business strategy, IT strategy, organizational infrastructure, and IT infrastructure.", tip:"Competitive potential means IT capabilities reshape business strategy."},
+      {id:"operating-model", term:"Operating model", zh:"运营模型", chapter:"Chapter 21", aliases:["operating model", "diversification", "replication", "coordination", "unification", "standardization", "integration"], explain:"A model classifying businesses by business process standardization and business process/data integration.", tip:"Diversification low/low; Replication high standardization; Coordination high integration; Unification high/high."}
+    ];
+    const glossaryById = Object.fromEntries(glossary.map(item => [item.id, item]));
+    const aliasToGlossaryId = {};
+    glossary.forEach(item => item.aliases.forEach(alias => aliasToGlossaryId[alias.toLowerCase()] = item.id));
+    const glossaryPattern = new RegExp(`(^|[^A-Za-z0-9])(${Object.keys(aliasToGlossaryId).sort((a, b) => b.length - a.length).map(escapeRegExp).join("|")})(?=$|[^A-Za-z0-9])`, "gi");
+    function escapeRegExp(value) {
+      return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function annotatedText(value) {
+      const text = String(value || "");
+      return escapeHtml(text).replace(glossaryPattern, (match, prefix, term) => {
+        const id = aliasToGlossaryId[term.toLowerCase()];
+        if (!id) return escapeHtml(match);
+        return `${escapeHtml(prefix)}<span class="term" role="button" tabindex="0" data-term="${id}">${escapeHtml(term)}</span>`;
+      });
+    }
+
+    function openTerm(id) {
+      const item = glossaryById[id];
+      if (!item) return;
+      $("termTitle").textContent = `${item.term} · ${item.zh}`;
+      $("termChapter").textContent = item.chapter;
+      $("termBody").innerHTML = `<strong>Meaning:</strong> ${escapeHtml(item.explain)}`;
+      $("termTip").textContent = item.tip;
+      $("termOverlay").hidden = false;
+      $("termPopover").hidden = false;
+    }
+
+    function closeTerm() {
+      $("termOverlay").hidden = true;
+      $("termPopover").hidden = true;
+    }
+
+    document.addEventListener("click", event => {
+      const term = event.target.closest?.(".term");
+      if (!term) return;
+      event.preventDefault();
+      event.stopPropagation();
+      openTerm(term.dataset.term);
+    }, true);
+
+    document.addEventListener("keydown", event => {
+      const term = event.target.closest?.(".term");
+      if (term && (event.key === "Enter" || event.key === " ")) {
+        event.preventDefault();
+        openTerm(term.dataset.term);
+      }
+      if (event.key === "Escape") closeTerm();
+    });
+
+    $("termClose").onclick = closeTerm;
+    $("termOverlay").onclick = closeTerm;
     const sourceByChapter = {
       "2": "the-it-management-essentials.pdf + ExerciseITM.docx · Exercises Lecture 1 · Chapter 2 · Porter activities / IS categories / benefits",
       "3": "the-it-management-essentials.pdf + Lecture 1-3 - Chapter 3.pdf + ExerciseITM.docx · Exercises Lecture 1 · Chapter 3 · lifecycle / IT management activities",
@@ -4495,8 +4680,8 @@
       state.cardIndex = Math.max(0, Math.min(state.cardIndex, list.length - 1));
       const item = list[state.cardIndex];
       $("cardMeta").innerHTML = metaHtml("card", item, state.cardIndex, list.length);
-      $("cardQuestion").textContent = item.q;
-      $("cardAnswer").textContent = state.showAnswer ? item.a : "点击“显示答案”后再判断自己是否掌握。";
+      $("cardQuestion").innerHTML = annotatedText(item.q);
+      $("cardAnswer").innerHTML = state.showAnswer ? annotatedText(item.a) : "点击“显示答案”后再判断自己是否掌握。";
       $("cardAnswer").className = state.showAnswer ? "answer" : "answer hidden";
       $("cardSource").innerHTML = `<strong>来源 / Source:</strong> ${sourceFor(item, "card")}`;
       $("cardProgress").style.width = `${(state.cardIndex + 1) / list.length * 100}%`;
@@ -4532,7 +4717,7 @@
       const record = state.quiz[item.id];
       const mapTarget = mapTargetFor(item);
       $("quizMeta").innerHTML = metaHtml("quiz", item, state.quizIndex, list.length);
-      $("quizQuestion").textContent = item.q;
+      $("quizQuestion").innerHTML = annotatedText(item.q);
       $("quizMap").textContent = `知识地图 / Map · Ch ${mapTarget.chapter}`;
       $("quizMap").title = mapTarget.branches.length ? `跳到 Chapter ${mapTarget.chapter}: ${mapTarget.branches.join(", ")}` : `跳到 Chapter ${mapTarget.chapter}`;
       $("options").innerHTML = "";
@@ -4545,7 +4730,7 @@
           if (realIndex === item.a) btn.classList.add("correct");
           if (realIndex === record.choice && realIndex !== item.a) btn.classList.add("wrong");
         }
-        btn.textContent = `${String.fromCharCode(65 + displayIndex)}. ${item.o[realIndex]}`;
+        btn.innerHTML = `${String.fromCharCode(65 + displayIndex)}. ${annotatedText(item.o[realIndex])}`;
         btn.onclick = () => {
           state.quiz[item.id] = {choice: realIndex, correct: realIndex === item.a, wrong: realIndex !== item.a};
           save();
@@ -4554,7 +4739,7 @@
         $("options").appendChild(btn);
       });
       $("explain").hidden = !record;
-      $("explain").textContent = record ? item.e : "";
+      $("explain").innerHTML = record ? annotatedText(item.e) : "";
       $("quizSource").innerHTML = `<strong>来源 / Source:</strong> ${sourceFor(item, "quiz")}`;
       $("quizProgress").style.width = `${(state.quizIndex + 1) / list.length * 100}%`;
     }
@@ -4592,14 +4777,14 @@
       const record = state.cloze[item.id];
       $("clozeInput").disabled = false;
       $("clozeMeta").innerHTML = metaHtml("cloze", item, state.clozeIndex, list.length);
-      $("clozeQuestion").textContent = item.q;
+      $("clozeQuestion").innerHTML = annotatedText(item.q);
       $("clozeInput").value = record?.answer || "";
       $("clozeInput").placeholder = "Type the missing English keyword...";
       $("clozeResult").hidden = !record;
       $("clozeResult").className = `cloze-result ${record?.correct ? "correct" : record ? "wrong" : ""}`;
-      $("clozeResult").innerHTML = record ? `${record.correct ? "Correct" : "Review"} · Your answer: <strong>${record.answer || "(blank)"}</strong><div class="answer-key">Answer: ${item.answers[0]}</div>` : "";
+      $("clozeResult").innerHTML = record ? `${record.correct ? "Correct" : "Review"} · Your answer: <strong>${escapeHtml(record.answer || "(blank)")}</strong><div class="answer-key">Answer: ${annotatedText(item.answers[0])}</div>` : "";
       $("clozeExplain").hidden = !record;
-      $("clozeExplain").textContent = record ? item.e : "";
+      $("clozeExplain").innerHTML = record ? annotatedText(item.e) : "";
       $("clozeSource").innerHTML = `<strong>来源 / Source:</strong> ${sourceFor(item, "cloze")}`;
       $("clozeProgress").style.width = `${(state.clozeIndex + 1) / list.length * 100}%`;
     }
