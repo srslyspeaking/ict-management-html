@@ -644,6 +644,26 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .essay-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      align-items: center;
+    }
+
+    .voice-status {
+      color: var(--muted);
+      font-size: 13px;
+      min-height: 20px;
+    }
+
+    #voiceEssay.listening {
+      border-color: var(--red);
+      color: var(--red);
+      background: #fff5f3;
+    }
+
     .ai-status {
       color: var(--muted);
       font-size: 13px;
@@ -1212,6 +1232,11 @@
               <div id="essayMeta" class="meta"></div>
               <h2 id="essayQuestion"></h2>
               <textarea id="essayAnswer" class="essay-answer" placeholder="用英文作答；可以先列 bullet points，再整理成完整答案。"></textarea>
+              <div class="essay-tools">
+                <button id="voiceEssay" type="button">语音输入 / Dictate</button>
+                <button id="clearEssayAnswer" type="button">清空答案</button>
+                <span id="voiceStatus" class="voice-status">支持浏览器会使用系统语音识别；不支持时仍可手打。</span>
+              </div>
               <div class="row" style="margin-top:12px">
                 <button id="gradeEssay" class="primary">AI 评分 / Grade</button>
                 <button id="showEssayModel">参考答案 / Model</button>
@@ -4710,6 +4735,7 @@
     state.mode ||= "all";
     state.search ||= "";
     state.retain ||= {};
+    state.retake ||= {};
 
     const $ = (id) => document.getElementById(id);
     $("mode").value = state.mode;
@@ -4746,35 +4772,35 @@
       {id:"operational-benefit", term:"Operational benefit", zh:"运营收益", chapter:"Chapter 2", aliases:["operational benefit", "operational benefits"], explain:"Benefit that improves day-to-day efficiency, speed, cost, or quality of operational work.", tip:"Often quantifiable, but not always strategic."},
       {id:"tactical-benefit", term:"Tactical benefit", zh:"战术收益", chapter:"Chapter 2", aliases:["tactical benefit", "tactical benefits"], explain:"Benefit that helps the organization better achieve existing goals or manage processes.", tip:"Middle layer between operational efficiency and strategic change."},
       {id:"strategic-benefit", term:"Strategic benefit", zh:"战略收益", chapter:"Chapter 2", aliases:["strategic benefit", "strategic benefits"], explain:"Benefit that changes or creates business strategy, competitive positioning, or the business model.", tip:"Exam cue: new digital business model usually means strategic benefit."},
-      {id:"framework", term:"Framework", zh:"框架", chapter:"Chapter 3", aliases:["framework", "reference model"], explain:"A shared structure of terminology, concepts, and relationships used to organize IT management knowledge and work products.", tip:"Framework questions often ask why common language is needed."},
+      {id:"framework", term:"Framework", zh:"框架", chapter:"Chapter 3", aliases:["information management framework", "reference model"], explain:"A shared structure of terminology, concepts, and relationships used to organize IT management knowledge and work products.", tip:"Framework questions often ask why common language is needed."},
       {id:"itil", term:"ITIL", zh:"IT 服务管理最佳实践", chapter:"Chapter 13", aliases:["itil", "information technology infrastructure library"], explain:"ITIL = Information Technology Infrastructure Library. It is a best-practice framework for IT service management, organized around practices/processes such as service strategy, design, transition, operation, and continual improvement in the course material.", tip:"Exam cue: ITIL gives practice guidance; ISO/IEC 20000 is the auditable/certifiable standard."},
       {id:"iso-20000", term:"ISO/IEC 20000", zh:"IT 服务管理认证标准", chapter:"Chapter 13", aliases:["iso/iec 20000", "iso 20000"], explain:"ISO/IEC 20000 is an international standard for IT service management systems. Unlike ITIL's best-practice guidance, ISO/IEC 20000 states requirements that an organization can be audited and certified against.", tip:"Exam cue: individual can be ITIL-certified; an organization/service management system can be ISO/IEC 20000-certified."},
       {id:"it4it", term:"IT4IT", zh:"IT 价值链参考架构", chapter:"Chapter 13", aliases:["it4it", "it4it value chain"], explain:"IT4IT is a reference architecture and value-chain view for managing IT. The course uses four value streams: Strategy to Portfolio, Requirement to Deploy, Request to Fulfill, and Detect to Correct.", tip:"Exam cue: IT4IT describes IT management through value streams and data objects, not just a list of ITIL processes."},
       {id:"cmmi-svc", term:"CMMI-SVC", zh:"服务能力成熟度模型", chapter:"Chapter 13", aliases:["cmmi-svc", "cmmi svc", "capability maturity model integration for services"], explain:"CMMI-SVC = Capability Maturity Model Integration for Services. It is an improvement framework for service organizations, using capability/maturity levels to describe how well processes are performed, managed, defined, and quantitatively controlled.", tip:"Exam cue: capability levels can apply to individual process areas; maturity levels describe the organization-wide process maturity."},
       {id:"cra", term:"CRA", zh:"欧盟网络韧性法案", chapter:"Guest lecture", aliases:["cra", "cyber resilience act"], explain:"CRA = Cyber Resilience Act. In the guest lecture context, it concerns EU cybersecurity requirements for products with digital elements, including obligations around secure design, vulnerability handling, and compliance responsibilities.", tip:"Exam cue: applicability asks whether the product has digital elements and falls inside the CRA scope/exceptions."},
       {id:"samm", term:"SAMM", zh:"软件保障成熟度模型", chapter:"Guest lecture", aliases:["samm", "owasp samm", "software assurance maturity model"], explain:"SAMM = Software Assurance Maturity Model. It is an OWASP maturity model used to assess and improve secure software development practices across governance, design, implementation, verification, and operations.", tip:"Exam cue: role of SAMM = diagnose current security maturity and plan structured improvements, not certify legal compliance by itself."},
-      {id:"it-governance", term:"IT governance", zh:"IT 治理", chapter:"Chapter 3 / 20", aliases:["it governance", "governance"], explain:"The structures and decision rights that ensure IT supports business objectives and does the right things.", tip:"Governance is about direction and oversight; management is about operating and delivering."},
+      {id:"it-governance", term:"IT governance", zh:"IT 治理", chapter:"Chapter 3 / 20", aliases:["it governance", "it governance framework"], explain:"The structures and decision rights that ensure IT supports business objectives and does the right things.", tip:"Governance is about direction and oversight; management is about operating and delivering."},
       {id:"it-management", term:"IT management", zh:"IT 管理", chapter:"Chapter 3", aliases:["it management"], explain:"The management of the IT function, IT services, resources, operations, development, and support.", tip:"Contrast with IT governance: management runs IT; governance steers IT."},
-      {id:"service-unit", term:"Service unit", zh:"服务计量单位", chapter:"Chapter 13 / 15", aliases:["service unit", "service units", "subscription-based", "volume-based"], explain:"The unit used to measure consumption of an IT service, such as PC-year, mailbox-month, printed page, or GB storage.", tip:"Subscription units are easier; volume units follow intensity of use."},
+      {id:"service-unit", term:"Service unit", zh:"服务计量单位", chapter:"Chapter 13 / 15", aliases:["service unit", "service units", "subscription service unit", "volume service unit", "subscription-based service unit", "volume-based service unit"], explain:"The unit used to measure consumption of an IT service, such as PC-year, mailbox-month, printed page, or GB storage.", tip:"Subscription units are easier; volume units follow intensity of use."},
       {id:"cloud-service-models", term:"Cloud service models", zh:"云服务模型", chapter:"Chapter 13", aliases:["iaas", "paas", "saas", "infrastructure as a service", "platform as a service", "software as a service", "cloud service model", "cloud service models"], explain:"IaaS = Infrastructure as a Service: provider offers computing/storage/network capacity. PaaS = Platform as a Service: provider also offers runtime/platform software. SaaS = Software as a Service: provider delivers a complete application.", tip:"Exam cue: customer installs own app on provider platform = PaaS; customer just uses finished app = SaaS."},
-      {id:"groschs-law", term:"Grosch's law", zh:"格罗什定律", chapter:"Chapter 13 / 15", aliases:["grosch", "grosch's law", "groschs law", "economies of scale"], explain:"A scaling idea that larger computing capacity can be proportionally cheaper, lowering unit cost as capacity grows.", tip:"Useful for cost/capacity calculation questions."},
+      {id:"groschs-law", term:"Grosch's law", zh:"格罗什定律", chapter:"Chapter 13 / 15", aliases:["grosch", "grosch's law", "groschs law"], explain:"A scaling idea that larger computing capacity can be proportionally cheaper, lowering unit cost as capacity grows.", tip:"Useful for cost/capacity calculation questions."},
       {id:"moores-law", term:"Moore's law", zh:"摩尔定律", chapter:"Chapter 13", aliases:["moore's law", "moores law", "gordon moore"], explain:"Observation associated with Gordon Moore that chip transistor density roughly doubles over time, driving rapid growth in computing capability.", tip:"Do not confuse with Grosch's law: Moore is technology progress; Grosch is cost/capacity scaling."},
-      {id:"npv", term:"NPV", zh:"净现值", chapter:"Chapter 15", aliases:["npv", "net present value", "discount rate", "cash flow", "cash flows"], explain:"NPV = Net Present Value. It discounts future cash flows to today's value and subtracts the initial investment: NPV = sum(CF_t / (1+r)^t).", tip:"Positive NPV means discounted benefits exceed discounted costs under the chosen discount rate."},
+      {id:"npv", term:"NPV", zh:"净现值", chapter:"Chapter 15", aliases:["npv", "net present value"], explain:"NPV = Net Present Value. It discounts future cash flows to today's value and subtracts the initial investment: NPV = sum(CF_t / (1+r)^t).", tip:"Positive NPV means discounted benefits exceed discounted costs under the chosen discount rate."},
       {id:"charge-out", term:"Charge-out", zh:"成本分摊/内部计费", chapter:"Chapter 15 / 20", aliases:["charge-out", "charge out", "cost recovery", "full cost recovery"], explain:"A mechanism to allocate IT service costs to users, departments, or business units according to chosen drivers.", tip:"Good charge-out should be understandable, fair, predictable, verifiable, and consistent."},
       {id:"change-types", term:"Change types", zh:"变更类型", chapter:"Chapter 16", aliases:["standard change", "normal change", "urgent change", "change request"], explain:"Standard changes are pre-approved and routine; normal changes need evaluation; urgent changes are expedited for time-critical needs.", tip:"Shared infrastructure impact often pushes a request toward normal change."},
-      {id:"incident-problem", term:"Incident / Problem", zh:"事件/问题", chapter:"Chapter 16", aliases:["incident", "incidents", "problem handling", "event management"], explain:"An event is a significant state change. An incident is an unwanted interruption or degradation. A problem is the underlying cause of one or more incidents.", tip:"Problem is about root cause, not just one user report."},
-      {id:"sla", term:"SLA / Service level", zh:"服务级别", chapter:"Chapter 17", aliases:["sla", "service level", "service levels", "service availability", "mtbf", "mttr"], explain:"SLA = Service Level Agreement. In this course, a service level is a quantitative minimum quality requirement for a service, usually with period p, percentage q, measured parameter, and threshold. MTBF = Mean Time Between Failures; MTTR = Mean Time To Repair.", tip:"Good SLA wording is measurable, precise, period-based, service-oriented, and minimum-quality based."},
+      {id:"incident-problem", term:"Incident / Problem", zh:"事件/问题", chapter:"Chapter 16", aliases:["incident", "incidents", "problem handling", "event management", "problem management"], explain:"An event is a significant state change. An incident is an unwanted interruption or degradation. A problem is the underlying cause of one or more incidents.", tip:"Problem is about root cause, not just one user report."},
+      {id:"sla", term:"SLA / Service level", zh:"服务级别", chapter:"Chapter 17", aliases:["sla", "service level agreement", "service level agreements", "mtbf", "mttr"], explain:"SLA = Service Level Agreement. In this course, a service level is a quantitative minimum quality requirement for a service, usually with period p, percentage q, measured parameter, and threshold. MTBF = Mean Time Between Failures; MTTR = Mean Time To Repair.", tip:"Good SLA wording is measurable, precise, period-based, service-oriented, and minimum-quality based."},
       {id:"supplier-classification", term:"Supplier classification", zh:"供应商分类", chapter:"Chapter 18", aliases:["strategic supplier", "tactical supplier", "operational supplier", "commodity supplier", "supplier classification"], explain:"Suppliers can be classified by importance and risk, from commodity suppliers to strategic partners.", tip:"Look at business impact, dependency, and substitutability."},
-      {id:"cobit", term:"COBIT", zh:"COBIT 治理与管理框架", chapter:"Chapter 20", aliases:["cobit", "goals cascade", "enabler", "enablers"], explain:"COBIT = Control Objectives for Information and Related Technologies. It is a governance and management framework for enterprise IT. Its goals cascade translates stakeholder needs into enterprise goals, IT-related goals, and then enabler/process goals.", tip:"Exam cue: do not answer only 'governance framework'; mention the cascade: stakeholder needs -> enterprise goals -> IT goals -> processes/enablers."},
+      {id:"cobit", term:"COBIT", zh:"COBIT 治理与管理框架", chapter:"Chapter 20", aliases:["cobit", "cobit goals cascade", "goals cascade", "cobit enabler", "cobit enablers"], explain:"COBIT = Control Objectives for Information and Related Technologies. It is a governance and management framework for enterprise IT. Its goals cascade translates stakeholder needs into enterprise goals, IT-related goals, and then enabler/process goals.", tip:"Exam cue: do not answer only 'governance framework'; mention the cascade: stakeholder needs -> enterprise goals -> IT goals -> processes/enablers."},
       {id:"iso-38500", term:"ISO/IEC 38500", zh:"IT 治理标准", chapter:"Chapter 20", aliases:["iso/iec 38500", "iso 38500", "evaluate direct monitor", "evaluate, direct, monitor"], explain:"ISO/IEC 38500 is the international standard for corporate governance of IT. Its three governance tasks are Evaluate, Direct, and Monitor: assess IT use, set direction, and monitor performance/conformance.", tip:"Do not confuse with ISO/IEC 20000, which concerns service management systems."},
       {id:"strategic-impact-grid", term:"Strategic Impact Grid", zh:"战略影响网格", chapter:"Chapter 21", aliases:["strategic impact grid", "support mode", "factory mode", "turnaround mode", "strategic mode"], explain:"A model classifying IT strategy by current operational dependence and future strategic importance of IT.", tip:"Support low/low; Factory high current/low future; Turnaround low current/high future; Strategic high/high."},
       {id:"nolan-mcfarlan", term:"Nolan & McFarlan", zh:"战略影响网格作者", chapter:"Chapter 21", aliases:["nolan and mcfarlan", "nolan & mcfarlan", "nolan", "mcfarlan"], explain:"Authors associated in the course with the Strategic Impact Grid, classifying IT by current operational dependence and future strategic importance.", tip:"If the question says Nolan & McFarlan, think Support, Factory, Turnaround, Strategic."},
-      {id:"sam", term:"Strategic Alignment Model", zh:"战略一致性模型", chapter:"Chapter 21", aliases:["strategic alignment model", "sam", "strategy execution", "technology transformation", "competitive potential", "service level perspective"], explain:"A model explaining alignment between business strategy, IT strategy, organizational infrastructure, and IT infrastructure.", tip:"Competitive potential means IT capabilities reshape business strategy."},
+      {id:"sam", term:"Strategic Alignment Model", zh:"战略一致性模型", chapter:"Chapter 21", aliases:["strategic alignment model", "sam", "sam model", "strategy execution perspective", "technology transformation perspective", "competitive potential perspective", "service level perspective"], explain:"A model explaining alignment between business strategy, IT strategy, organizational infrastructure, and IT infrastructure.", tip:"Competitive potential means IT capabilities reshape business strategy."},
       {id:"henderson-venkatraman", term:"Henderson & Venkatraman", zh:"SAM 作者", chapter:"Chapter 21", aliases:["henderson and venkatraman", "henderson & venkatraman", "henderson", "venkatraman"], explain:"Authors associated with the Strategic Alignment Model linking business strategy, IT strategy, organizational infrastructure, and IT infrastructure.", tip:"If the question says Henderson & Venkatraman, think SAM and its four domains/perspectives."},
       {id:"weill-broadbent", term:"Weill & Broadbent", zh:"业务-IT 对齐模型", chapter:"Chapter 21", aliases:["weill and broadbent", "weill & broadbent", "broadbent"], explain:"Course model describing business-IT alignment contexts, including business strategy, IT strategy, organizational infrastructure, and IT infrastructure.", tip:"Questions often ask which context/domain a statement belongs to."},
       {id:"weill-ross", term:"Weill & Ross", zh:"IT 决策域", chapter:"Chapter 20", aliases:["weill and ross", "weill & ross"], explain:"Authors associated with IT decision domains and decision arrangements, such as IT principles, architecture, infrastructure, applications, and investments.", tip:"If the question asks who decides which IT domain, think Weill & Ross decision rights."},
       {id:"luftman", term:"Luftman", zh:"业务-IT 对齐成熟度", chapter:"Chapter 21", aliases:["luftman", "luftman model"], explain:"Model used to assess business-IT alignment maturity through multiple criteria and maturity levels.", tip:"Exam cue: communication, competency/value measurement, governance, partnership, scope/architecture, skills."},
-      {id:"operating-model", term:"Operating model", zh:"运营模型", chapter:"Chapter 21", aliases:["operating model", "diversification", "replication", "coordination", "unification", "process standardization", "process integration"], explain:"A model classifying businesses by business process standardization and business process/data integration.", tip:"Diversification low/low; Replication high standardization; Coordination high integration; Unification high/high."},
+      {id:"operating-model", term:"Operating model", zh:"运营模型", chapter:"Chapter 21", aliases:["operating model", "diversification operating model", "replication operating model", "coordination operating model", "unification operating model", "process standardization", "process integration"], explain:"A model classifying businesses by business process standardization and business process/data integration.", tip:"Diversification low/low; Replication high standardization; Coordination high integration; Unification high/high."},
       {id:"ross-operating-model", term:"Ross et al.", zh:"运营模型作者", chapter:"Chapter 21", aliases:["ross et al", "ross et al.", "ross"], explain:"Authors associated in the course with the operating model quadrant based on process standardization and integration.", tip:"If the question says Ross et al. (2006), think Diversification, Replication, Coordination, Unification."},
       {id:"kbc", term:"KBC", zh:"比利时银行保险集团", chapter:"Chapter 21 case", aliases:["kbc", "kbc group"], explain:"An integrated bank-insurance group with retail, private banking, SME, and mid-cap clients in several European core markets.", tip:"Exam cue: banking relies heavily on reliable digital channels, trust, security, and customer service; often Strategic mode / customer or technology transformation framing."},
       {id:"bol", term:"bol.com / bol", zh:"荷比电商平台", chapter:"Chapter 20 / 21 case", aliases:["bol.com"], explain:"A large Dutch-Belgian e-commerce platform that evolved from webshop to marketplace with many sales partners.", tip:"Exam cue: online retail platform means IT is core to current operations and future strategy; often Strategic mode / Competitive potential / customer focus."},
@@ -4794,7 +4820,8 @@
     const glossaryById = Object.fromEntries(glossary.map(item => [item.id, item]));
     const aliasToGlossaryId = {};
     glossary.forEach(item => item.aliases.forEach(alias => aliasToGlossaryId[alias.toLowerCase()] = item.id));
-    const glossaryPattern = new RegExp(`(^|[^A-Za-z0-9])(${Object.keys(aliasToGlossaryId).sort((a, b) => b.length - a.length).map(escapeRegExp).join("|")})(?=$|[^A-Za-z0-9])`, "gi");
+    const glossaryAliases = Object.keys(aliasToGlossaryId).sort((a, b) => b.length - a.length);
+    const glossaryPattern = new RegExp(`(^|[^A-Za-z0-9])(${glossaryAliases.map(escapeRegExp).join("|")})(?=$|[^A-Za-z0-9])`, "gi");
     function escapeRegExp(value) {
       return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
@@ -4811,11 +4838,22 @@
 
     function annotatedText(value) {
       const text = String(value || "");
-      return escapeHtml(text).replace(glossaryPattern, (match, prefix, term) => {
+      let html = "";
+      let lastIndex = 0;
+      glossaryPattern.lastIndex = 0;
+      let match;
+      while ((match = glossaryPattern.exec(text))) {
+        const [whole, prefix, term] = match;
         const id = aliasToGlossaryId[term.toLowerCase()];
-        if (!id) return escapeHtml(match);
-        return `${escapeHtml(prefix)}<span class="term" role="button" tabindex="0" data-term="${id}">${escapeHtml(term)}</span>`;
-      });
+        const termStart = match.index + prefix.length;
+        html += escapeHtml(text.slice(lastIndex, termStart));
+        html += id
+          ? `<span class="term" role="button" tabindex="0" data-term="${id}">${escapeHtml(term)}</span>`
+          : escapeHtml(term);
+        lastIndex = match.index + whole.length;
+      }
+      html += escapeHtml(text.slice(lastIndex));
+      return html;
     }
 
     function openTerm(id) {
@@ -5232,7 +5270,8 @@
       }
       state.quizIndex = Math.max(0, Math.min(state.quizIndex, list.length - 1));
       const item = list[state.quizIndex];
-      const record = state.quiz[item.id];
+      const isRetake = state.retake.quiz === item.id;
+      const record = isRetake ? null : state.quiz[item.id];
       const mapTarget = mapTargetFor(item);
       $("quizMeta").innerHTML = metaHtml("quiz", item, state.quizIndex, list.length);
       $("quizQuestion").innerHTML = annotatedText(item.q);
@@ -5250,6 +5289,7 @@
         }
         btn.textContent = `${String.fromCharCode(65 + displayIndex)}. ${item.o[realIndex]}`;
         btn.onclick = () => {
+          if (state.retake.quiz === item.id) delete state.retake.quiz;
           state.quiz[item.id] = {choice: realIndex, correct: realIndex === item.a, wrong: realIndex !== item.a, ts: new Date().toISOString()};
           if ($("mode").value === "unseen") state.retain.quiz = item.id;
           save();
@@ -5294,7 +5334,8 @@
         $("clozeProgress").style.width = "0%";
         return;
       }
-      const record = state.cloze[item.id];
+      const isRetake = state.retake.cloze === item.id;
+      const record = isRetake ? null : state.cloze[item.id];
       $("clozeInput").disabled = false;
       $("clozeMeta").innerHTML = metaHtml("cloze", item, state.clozeIndex, list.length);
       $("clozeQuestion").innerHTML = annotatedText(item.q);
@@ -5316,6 +5357,7 @@
       const normalized = normalizeAnswer(answer);
       const accepted = item.answers.map(normalizeAnswer);
       const correct = reveal ? false : accepted.includes(normalized);
+      if (state.retake.cloze === item.id) delete state.retake.cloze;
       state.cloze[item.id] = {answer, correct, wrong: !correct, revealed: reveal, ts: new Date().toISOString()};
       if ($("mode").value === "unseen") state.retain.cloze = item.id;
       save();
@@ -5342,7 +5384,8 @@
         $("essayProgress").style.width = "0%";
         return;
       }
-      const record = state.essay[item.id] || {};
+      const isRetake = state.retake.essay === item.id;
+      const record = isRetake ? {} : (state.essay[item.id] || {});
       $("essayMeta").innerHTML = metaHtml("essay", item, state.essayIndex, list.length);
       $("essayQuestion").innerHTML = annotatedText(item.q);
       $("essayAnswer").value = record.answer || "";
@@ -5395,6 +5438,7 @@
       }
       if (!apiKey) {
         const feedback = `未填写 API key，无法自动评分。\n\n参考答案：${item.a}\n\n评分要点：${(item.rubric || []).join("；")}`;
+        if (state.retake.essay === item.id) delete state.retake.essay;
         state.essay[item.id] = {...(state.essay[item.id] || {}), answer, feedback, score: null, ts: new Date().toISOString()};
         $("essayStatus").textContent = "未填写 API key，已显示参考评分要点。";
         save();
@@ -5424,10 +5468,12 @@
           .join("\n")
           .trim();
         const score = parseScore(feedback);
+        if (state.retake.essay === item.id) delete state.retake.essay;
         state.essay[item.id] = {answer, feedback, score, correct: score !== null ? score >= 7 : false, wrong: score !== null ? score < 7 : false, ts: new Date().toISOString()};
         $("essayStatus").textContent = "评分完成。";
       } catch (error) {
         const feedback = `GPT 评分失败：${error.message}\n\n参考答案：${item.a}\n\n评分要点：${(item.rubric || []).join("；")}`;
+        if (state.retake.essay === item.id) delete state.retake.essay;
         state.essay[item.id] = {...(state.essay[item.id] || {}), answer, feedback, score: null, ts: new Date().toISOString()};
         $("essayStatus").textContent = "评分失败，已显示参考答案。";
       } finally {
@@ -5441,6 +5487,7 @@
       const {item} = currentEssay();
       if (!item) return;
       const answer = $("essayAnswer").value.trim();
+      if (state.retake.essay === item.id) delete state.retake.essay;
       state.essay[item.id] = {
         ...(state.essay[item.id] || {}),
         answer,
@@ -5469,19 +5516,18 @@
           type: "card",
           label: "Flashcard",
           item,
-          detail: `<div><strong>Answer:</strong> ${item.a}</div><div><strong>Source:</strong> ${sourceFor(item, "card")}</div>`
+          detail: `<div>答案会在重练时保持隐藏，点“显示答案”后再看。</div><div><strong>Source:</strong> ${sourceFor(item, "card")}</div>`
         }));
       const quizMistakes = allItems(quiz, "quiz")
         .filter(item => state.quiz[item.id]?.wrong && matches(item))
         .map(item => {
           const record = state.quiz[item.id];
           const your = item.o[record.choice] || "(no answer)";
-          const correct = item.o[item.a];
           return {
             type: "quiz",
             label: "选择题",
             item,
-            detail: `<div><strong>Your answer:</strong> ${your}</div><div><strong>Correct:</strong> ${correct}</div><div>${item.e}</div><div><strong>Source:</strong> ${sourceFor(item, "quiz")}</div>`
+            detail: `<div><strong>Previous answer:</strong> ${escapeHtml(your)}</div><div>正确答案和解析将在重练作答后显示。</div><div><strong>Source:</strong> ${sourceFor(item, "quiz")}</div>`
           };
         });
       const clozeMistakes = allItems(cloze, "cloze")
@@ -5492,7 +5538,7 @@
             type: "cloze",
             label: "填空题",
             item,
-            detail: `<div><strong>Your answer:</strong> ${record.answer || "(blank)"}</div><div><strong>Correct:</strong> ${item.answers[0]}</div><div>${item.e}</div><div><strong>Source:</strong> ${sourceFor(item, "cloze")}</div>`
+            detail: `<div><strong>Previous answer:</strong> ${escapeHtml(record.answer || "(blank)")}</div><div>正确答案和解析将在重练作答后显示。</div><div><strong>Source:</strong> ${sourceFor(item, "cloze")}</div>`
           };
         });
       const essayMistakes = allItems(essays, "essay")
@@ -5503,7 +5549,7 @@
             type: "essay",
             label: "大题",
             item,
-            detail: `<div><strong>Score:</strong> ${Number.isFinite(record.score) ? `${record.score}/10` : "Review"}</div><div><strong>Your answer:</strong> ${escapeHtml((record.answer || "").slice(0, 260))}</div><div><strong>Feedback:</strong> ${escapeHtml(cleanMarkdownText(record.feedback || ""))}</div><div><strong>Source:</strong> ${sourceFor(item, "essay")}</div>`
+            detail: `<div><strong>Previous score:</strong> ${Number.isFinite(record.score) ? `${record.score}/10` : "Review"}</div><div><strong>Previous answer:</strong> ${escapeHtml((record.answer || "").slice(0, 220))}</div><div>参考答案和反馈将在重练评分后显示。</div><div><strong>Source:</strong> ${sourceFor(item, "essay")}</div>`
           };
         });
       return [...cardMistakes, ...quizMistakes, ...clozeMistakes, ...essayMistakes];
@@ -5873,14 +5919,18 @@
 
     function reviewPrompt(data) {
       return [
-        "You are a bilingual ICT Service Management exam tutor. The student studies for an English exam but prefers Chinese explanations.",
-        "Base your tutoring on the book structure of The IT Management Essentials, especially chapters 2, 3, and 13-21.",
-        "Use the provided chapterReviewGuide to avoid vague comments. When diagnosing weakness, name the exact model/formula/distinction that is likely weak.",
-        "Analyze the student's local quiz records. Produce:",
-        "1. Weakness diagnosis by chapter/topic, including the likely misconception.",
-        "2. A targeted review outline for the next study session, organized by book concepts rather than generic chapter names.",
-        "3. Detailed explanations for the mistakes: explain why the correct answer is correct, why the likely wrong reasoning is tempting, and what English keywords the student should recognize.",
-        "4. A short drill plan: what to do first, second, third, including calculation drills if Chapter 13/15/17 are weak.",
+        "You are a strict bilingual ICT Service Management exam tutor. The student studies for an English exam but wants Chinese explanations with key English terms preserved.",
+        "Use the course/book structure of The IT Management Essentials: chapters 2, 3, and 13-21. Treat the supplied chapterReviewGuide as the source of what each chapter is about.",
+        "Do not give generic encouragement. Every diagnosis must name an exact concept, model, formula, distinction, or case-reading clue.",
+        "When data is limited, say what evidence is limited, then still produce a concrete next drill plan.",
+        "Output plain text only. Do not use Markdown headings, asterisks, hashtags, or decorative bullets.",
+        "",
+        "Required output sections:",
+        "一、总体判断: 3-5 sentences. Mention whether the weakness is calculation, framework distinction, SLA wording, governance decision rights, or alignment case reading.",
+        "二、按章节补漏: For each priority chapter, write: book core concept, observed weakness, likely trap, exact revision action, and 1 English exam sentence template.",
+        "三、错题精讲: For up to 8 mistakes, explain why the correct logic works, why the wrong logic is tempting, and which English keywords in the question should trigger the correct model.",
+        "四、计算题专项: If Chapter 13/15/17 appear, include formulas and one micro-drill for service volume/cost, NPV/IRR, SLA availability/MTBF/MTTR.",
+        "五、下一轮刷题顺序: Give a numbered 20-40 minute plan using the app modes: 错题集, 只练未做, 只练计算选择题, 大题区.",
         "Be practical and exam-oriented. Do not invent facts outside the provided course data.",
         "Output in Chinese, but preserve key English terms such as service unit, service catalog, NPV, SLA, COBIT goals cascade, Strategic Alignment Model, Strategic Impact Grid, operating model.",
         "",
@@ -5953,25 +6003,28 @@
         const list = filtered(cards, "card");
         const index = list.findIndex(item => item.id === id);
         state.cardIndex = Math.max(0, index);
-        state.showAnswer = true;
+        state.showAnswer = false;
         state.view = "cards";
       }
       if (type === "quiz") {
         const list = filtered(quiz, "quiz");
         const index = list.findIndex(item => item.id === id);
         state.quizIndex = Math.max(0, index);
+        state.retake.quiz = id;
         state.view = "quiz";
       }
       if (type === "cloze") {
         const list = filtered(cloze, "cloze");
         const index = list.findIndex(item => item.id === id);
         state.clozeIndex = Math.max(0, index);
+        state.retake.cloze = id;
         state.view = "cloze";
       }
       if (type === "essay") {
         const list = filtered(essays, "essay");
         const index = list.findIndex(item => item.id === id);
         state.essayIndex = Math.max(0, index);
+        state.retake.essay = id;
         state.view = "essay";
       }
       render();
@@ -6156,6 +6209,73 @@
       if (runNow) gradeEssay();
     }
 
+    function saveCurrentEssayDraft() {
+      const {item} = currentEssay();
+      if (!item) return;
+      state.essay[item.id] = {...(state.essay[item.id] || {}), answer: $("essayAnswer").value, ts: new Date().toISOString()};
+      save();
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let essayRecognition = null;
+    let essayListening = false;
+
+    function setVoiceListening(value) {
+      essayListening = value;
+      $("voiceEssay").classList.toggle("listening", value);
+      $("voiceEssay").textContent = value ? "停止语音 / Stop" : "语音输入 / Dictate";
+    }
+
+    function appendEssayTranscript(text) {
+      const clean = String(text || "").trim();
+      if (!clean) return;
+      const current = $("essayAnswer").value.trimEnd();
+      const spacer = current && !/[\s\n]$/.test(current) ? " " : "";
+      $("essayAnswer").value = `${current}${spacer}${clean}`;
+      saveCurrentEssayDraft();
+    }
+
+    function toggleEssayVoice() {
+      if (!SpeechRecognition) {
+        $("voiceStatus").textContent = "当前浏览器不支持语音识别。可以用 iPhone 键盘自带听写，或换 Safari/Chrome 试试。";
+        return;
+      }
+      if (essayListening && essayRecognition) {
+        essayRecognition.stop();
+        return;
+      }
+      essayRecognition = new SpeechRecognition();
+      essayRecognition.lang = "en-US";
+      essayRecognition.continuous = true;
+      essayRecognition.interimResults = true;
+      essayRecognition.onstart = () => {
+        setVoiceListening(true);
+        $("voiceStatus").textContent = "正在听写英文答案... 再点一次可停止。";
+      };
+      essayRecognition.onresult = event => {
+        let finalText = "";
+        let interimText = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0]?.transcript || "";
+          if (event.results[i].isFinal) finalText += transcript;
+          else interimText += transcript;
+        }
+        if (finalText) appendEssayTranscript(finalText);
+        $("voiceStatus").textContent = interimText ? `识别中：${interimText.trim()}` : "正在听写英文答案...";
+      };
+      essayRecognition.onerror = event => {
+        setVoiceListening(false);
+        $("voiceStatus").textContent = event.error === "not-allowed"
+          ? "麦克风权限被拒绝。可以用系统键盘听写，或在浏览器设置里允许麦克风。"
+          : `语音识别失败：${event.error}`;
+      };
+      essayRecognition.onend = () => {
+        setVoiceListening(false);
+        $("voiceStatus").textContent = "语音输入已停止。";
+      };
+      essayRecognition.start();
+    }
+
     $("apiFab").onclick = () => setApiDrawer($("apiDrawer").hidden);
     $("apiClose").onclick = () => setApiDrawer(false);
     $("globalApiKey").oninput = () => syncApiKey("globalApiKey");
@@ -6168,6 +6288,12 @@
     $("apiRunReview").onclick = () => openAiReview(true);
     $("apiGoEssay").onclick = () => openEssayGrade(false);
     $("apiGradeEssay").onclick = () => openEssayGrade(true);
+    $("voiceEssay").onclick = toggleEssayVoice;
+    $("clearEssayAnswer").onclick = () => {
+      $("essayAnswer").value = "";
+      saveCurrentEssayDraft();
+      $("voiceStatus").textContent = "已清空当前大题答案。";
+    };
     document.addEventListener("keydown", event => {
       if (event.key === "Escape" && !$("apiDrawer").hidden) setApiDrawer(false);
     });
@@ -6238,10 +6364,7 @@
       render();
     };
     $("essayAnswer").oninput = () => {
-      const {item} = currentEssay();
-      if (!item) return;
-      state.essay[item.id] = {...(state.essay[item.id] || {}), answer: $("essayAnswer").value, ts: new Date().toISOString()};
-      save();
+      saveCurrentEssayDraft();
     };
     $("gradeEssay").onclick = gradeEssay;
     $("showEssayModel").onclick = showEssayModel;
