@@ -664,6 +664,19 @@
       background: #fff5f3;
     }
 
+    .essay-float-nav {
+      position: sticky;
+      bottom: 10px;
+      z-index: 20;
+      margin-top: 12px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
     .ai-status {
       color: var(--muted);
       font-size: 13px;
@@ -742,6 +755,22 @@
     .api-drawer-actions button {
       min-width: 0;
       white-space: normal;
+    }
+
+    .api-remember {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .api-remember input {
+      width: 18px;
+      min-height: 18px;
+      margin-top: 1px;
+      flex: 0 0 auto;
     }
 
     .api-close {
@@ -1051,6 +1080,19 @@
       .ai-grid { grid-template-columns: 1fr; }
       .essay-layout { grid-template-columns: 1fr; }
       .essay-answer { min-height: 150px; }
+      #essayView {
+        padding-bottom: 76px;
+      }
+      .essay-float-nav {
+        bottom: calc(8px + env(safe-area-inset-bottom));
+        margin-left: -4px;
+        margin-right: -4px;
+        display: grid;
+        grid-template-columns: 44px 1fr 1fr;
+      }
+      .essay-float-nav #prevEssay {
+        width: 44px;
+      }
       .quiz {
         padding: 14px;
         gap: 12px;
@@ -1244,8 +1286,9 @@
               <div id="essayFeedback" class="explain" hidden></div>
               <div id="essaySource" class="source-note"></div>
               <div class="progress"><div id="essayProgress" class="bar"></div></div>
-              <div class="row">
+              <div class="row essay-float-nav">
                 <button id="prevEssay" class="icon" title="上一题">‹</button>
+                <button id="floatGradeEssay" class="primary">AI 评分</button>
                 <button id="nextEssay" class="primary">下一道大题</button>
               </div>
             </div>
@@ -1254,6 +1297,7 @@
               <div class="ai-controls">
                 <input id="essayApiKey" type="password" autocomplete="off" placeholder="OpenAI API key，临时输入，不写进文件">
                 <select id="essayModel">
+                  <option value="gpt-5.5">gpt-5.5</option>
                   <option value="gpt-4.1-mini">gpt-4.1-mini</option>
                   <option value="gpt-4o-mini">gpt-4o-mini</option>
                 </select>
@@ -1310,6 +1354,7 @@
               <div class="ai-controls">
                 <input id="apiKey" type="password" autocomplete="off" placeholder="临时粘贴 OpenAI API key，不会写进 HTML">
                 <select id="aiModel">
+                  <option value="gpt-5.5">gpt-5.5</option>
                   <option value="gpt-4.1-mini">gpt-4.1-mini</option>
                   <option value="gpt-4o-mini">gpt-4o-mini</option>
                 </select>
@@ -1359,7 +1404,12 @@
       <button id="apiClose" class="api-close" type="button" aria-label="关闭 AI 设置">×</button>
     </div>
     <input id="globalApiKey" type="password" autocomplete="off" placeholder="OpenAI API key">
+    <label class="api-remember">
+      <input id="rememberApiKey" type="checkbox" checked>
+      <span>本机记住 API key，刷新后自动回填。只建议在自己的设备上使用。</span>
+    </label>
     <select id="globalModel">
+      <option value="gpt-5.5">gpt-5.5</option>
       <option value="gpt-4.1-mini">gpt-4.1-mini</option>
       <option value="gpt-4o-mini">gpt-4o-mini</option>
     </select>
@@ -1368,6 +1418,7 @@
       <button id="apiRunReview" type="button">直接生成复盘</button>
       <button id="apiGoEssay" type="button">打开大题区</button>
       <button id="apiGradeEssay" type="button">评分当前大题</button>
+      <button id="clearSavedApiKey" type="button">清除保存 key</button>
     </div>
     <div id="apiDrawerStatus" class="ai-status">建议只在自己设备上临时粘贴 key；上传 GitHub 前不要把 key 写入源码。</div>
   </div>
@@ -4666,6 +4717,8 @@
     ];
 
     const storeKey = "ictsm-review-progress-iphone-offline";
+    const apiKeyStoreKey = "ictsm-review-openai-api-key-local";
+    const modelStoreKey = "ictsm-review-openai-model-local";
     const legacyStoreKeys = [
       "ictsm-review-practical-v3",
       "ictsm-review-exercise-v2",
@@ -4740,6 +4793,19 @@
     const $ = (id) => document.getElementById(id);
     $("mode").value = state.mode;
     $("search").value = state.search;
+    const savedApiKey = localStorage.getItem(apiKeyStoreKey) || "";
+    const savedModel = localStorage.getItem(modelStoreKey) || "gpt-5.5";
+    ["globalApiKey", "apiKey", "essayApiKey"].forEach(id => {
+      const input = $(id);
+      if (input) input.value = savedApiKey;
+    });
+    ["globalModel", "aiModel", "essayModel"].forEach(id => {
+      const select = $(id);
+      if (select && [...select.options].some(option => option.value === savedModel)) select.value = savedModel;
+    });
+    if (savedApiKey) {
+      $("apiDrawerStatus").textContent = "已从本机浏览器自动回填 API key；不会写进 HTML 源码。";
+    }
     let lastSavedOk = true;
     const save = () => {
       try {
@@ -5427,6 +5493,16 @@
       return Math.max(0, Math.min(10, Number(match[1])));
     }
 
+    function responseRequestBody(model, input, temperature = 0.2) {
+      const body = {model, input};
+      if (/^gpt-5\./.test(model)) {
+        body.reasoning = {effort: model === "gpt-5.5" ? "medium" : "low"};
+      } else {
+        body.temperature = temperature;
+      }
+      return body;
+    }
+
     async function gradeEssay() {
       const {item} = currentEssay();
       if (!item) return;
@@ -5454,11 +5530,7 @@
             "Content-Type": "application/json",
             "Authorization": `Bearer ${apiKey}`
           },
-          body: JSON.stringify({
-            model: $("essayModel").value,
-            input: essayPrompt(item, answer),
-            temperature: 0.1
-          })
+          body: JSON.stringify(responseRequestBody($("essayModel").value, essayPrompt(item, answer), 0.1))
         });
         const json = await response.json();
         if (!response.ok) throw new Error(json.error?.message || `HTTP ${response.status}`);
@@ -5959,11 +6031,7 @@
             "Content-Type": "application/json",
             "Authorization": `Bearer ${apiKey}`
           },
-          body: JSON.stringify({
-            model: $("aiModel").value,
-            input: reviewPrompt(data),
-            temperature: 0.2
-          })
+          body: JSON.stringify(responseRequestBody($("aiModel").value, reviewPrompt(data), 0.2))
         });
         const json = await response.json();
         if (!response.ok) {
@@ -6175,9 +6243,13 @@
         const target = $(id);
         if (target && target !== source) target.value = source.value;
       });
+      if ($("rememberApiKey")?.checked) {
+        if (source.value) localStorage.setItem(apiKeyStoreKey, source.value);
+        else localStorage.removeItem(apiKeyStoreKey);
+      }
       $("apiDrawerStatus").textContent = source.value
-        ? "API key 已注入到 AI 复盘和大题评分输入框；仍然只存在当前页面。"
-        : "API key 已清空；不会写入文件或本地记录。";
+        ? ($("rememberApiKey")?.checked ? "API key 已注入并保存在本机浏览器；不会写进 HTML 源码。" : "API key 已注入到当前页面；刷新后不会保留。")
+        : "API key 已清空。";
     }
 
     function syncAiModel(sourceId) {
@@ -6187,6 +6259,16 @@
         const target = $(id);
         if (target && target !== source) target.value = source.value;
       });
+      localStorage.setItem(modelStoreKey, source.value);
+    }
+
+    function clearSavedApiKey() {
+      localStorage.removeItem(apiKeyStoreKey);
+      ["globalApiKey", "apiKey", "essayApiKey"].forEach(id => {
+        const input = $(id);
+        if (input) input.value = "";
+      });
+      $("apiDrawerStatus").textContent = "已清除本机保存的 API key。";
     }
 
     function openAiReview(runNow = false) {
@@ -6288,6 +6370,14 @@
     $("apiRunReview").onclick = () => openAiReview(true);
     $("apiGoEssay").onclick = () => openEssayGrade(false);
     $("apiGradeEssay").onclick = () => openEssayGrade(true);
+    $("clearSavedApiKey").onclick = clearSavedApiKey;
+    $("rememberApiKey").onchange = () => {
+      if ($("rememberApiKey").checked) syncApiKey("globalApiKey");
+      else {
+        localStorage.removeItem(apiKeyStoreKey);
+        $("apiDrawerStatus").textContent = "已关闭本机记住；当前页面还能继续使用这个 key，刷新后不保留。";
+      }
+    };
     $("voiceEssay").onclick = toggleEssayVoice;
     $("clearEssayAnswer").onclick = () => {
       $("essayAnswer").value = "";
@@ -6367,6 +6457,7 @@
       saveCurrentEssayDraft();
     };
     $("gradeEssay").onclick = gradeEssay;
+    $("floatGradeEssay").onclick = gradeEssay;
     $("showEssayModel").onclick = showEssayModel;
     $("prevEssay").onclick = () => {
       state.essayIndex -= 1;
