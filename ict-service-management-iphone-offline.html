@@ -685,6 +685,41 @@
       min-height: 20px;
     }
 
+    .sync-panel {
+      margin-top: 12px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      display: grid;
+      gap: 8px;
+    }
+
+    .sync-panel strong {
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .sync-panel textarea {
+      width: 100%;
+      min-height: 82px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .sync-panel small {
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .sync-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
     #voiceEssay.listening {
       border-color: var(--red);
       color: var(--red);
@@ -1043,7 +1078,7 @@
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
-        max-height: 228px;
+        max-height: 188px;
         overflow: auto;
       }
       .chapter-grid button {
@@ -1088,6 +1123,12 @@
       .stat { padding: 10px; }
       .stat strong { font-size: 18px; }
       .stat span { font-size: 11px; }
+      .sync-panel {
+        margin-top: 10px;
+      }
+      .sync-panel textarea {
+        min-height: 68px;
+      }
       .tabs {
         order: 1;
         position: sticky;
@@ -1260,6 +1301,22 @@
       <div class="row">
         <button id="shuffle" title="随机排列">↻ 随机</button>
         <button id="reset" title="清空本地进度">重置</button>
+      </div>
+
+      <div class="sync-panel">
+        <strong>进度同步</strong>
+        <div class="sync-grid">
+          <button id="exportProgress" type="button">导出进度</button>
+          <button id="importProgress" type="button">导入进度</button>
+        </div>
+        <input id="importProgressFile" type="file" accept="application/json,.json" hidden>
+        <div class="sync-grid">
+          <button id="makeSyncCode" type="button">生成同步码</button>
+          <button id="copySyncCode" type="button">复制同步码</button>
+          <button id="applySyncCode" type="button">应用同步码</button>
+        </div>
+        <textarea id="syncCode" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="电脑点生成同步码，复制到手机这里，再点应用同步码。"></textarea>
+        <small id="syncStatus">导入会自动备份并合并本机记录。</small>
       </div>
     </aside>
 
@@ -4931,6 +4988,174 @@
         lastSavedOk = false;
       }
     };
+
+    function progressPayload() {
+      return {
+        app: "ict-service-management-review",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        source: location.href,
+        state: JSON.parse(JSON.stringify(state))
+      };
+    }
+
+    function newerRecord(a, b) {
+      if (!a) return b;
+      if (!b) return a;
+      const at = Date.parse(a.ts || a.updatedAt || 0) || 0;
+      const bt = Date.parse(b.ts || b.updatedAt || 0) || 0;
+      return bt >= at ? b : a;
+    }
+
+    function mergeRecordMap(current = {}, incoming = {}) {
+      const merged = {...current};
+      Object.entries(incoming || {}).forEach(([key, value]) => {
+        merged[key] = newerRecord(merged[key], value);
+      });
+      return merged;
+    }
+
+    function mergeBooleanMap(current = {}, incoming = {}) {
+      return {...current, ...incoming};
+    }
+
+    function normalizeImportedState(value) {
+      const imported = value?.state || value;
+      if (!imported || typeof imported !== "object") throw new Error("没有找到有效的进度数据。");
+      return imported;
+    }
+
+    function mergeProgressState(current, incomingRaw) {
+      const incoming = normalizeImportedState(incomingRaw);
+      const merged = {...current, ...incoming};
+      merged.known = mergeBooleanMap(current.known, incoming.known);
+      merged.weak = mergeBooleanMap(current.weak, incoming.weak);
+      merged.quiz = mergeRecordMap(current.quiz, incoming.quiz);
+      merged.essay = mergeRecordMap(current.essay, incoming.essay);
+      merged.cloze = mergeRecordMap(current.cloze, incoming.cloze);
+      merged.retain = {...(current.retain || {}), ...(incoming.retain || {})};
+      merged.retake = {...(current.retake || {}), ...(incoming.retake || {})};
+      merged.chapter ||= "all";
+      merged.view ||= "quiz";
+      merged.mode ||= "all";
+      merged.search ||= "";
+      merged.cardIndex = Number.isInteger(merged.cardIndex) ? merged.cardIndex : 0;
+      merged.quizIndex = Number.isInteger(merged.quizIndex) ? merged.quizIndex : 0;
+      merged.essayIndex = Number.isInteger(merged.essayIndex) ? merged.essayIndex : 0;
+      merged.clozeIndex = Number.isInteger(merged.clozeIndex) ? merged.clozeIndex : 0;
+      return merged;
+    }
+
+    function replaceRuntimeState(nextState) {
+      Object.keys(state).forEach(key => delete state[key]);
+      Object.assign(state, nextState);
+      $("mode").value = state.mode || "all";
+      $("search").value = state.search || "";
+      save();
+      render();
+    }
+
+    function setSyncStatus(text) {
+      $("syncStatus").textContent = text;
+    }
+
+    function downloadProgress() {
+      const payload = progressPayload();
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {type: "application/json"});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      link.href = url;
+      link.download = `ict-service-management-progress-${stamp}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setSyncStatus("已导出 JSON；可以发到另一台设备再导入。");
+    }
+
+    async function importProgressText(text, source = "导入数据") {
+      const payload = JSON.parse(text);
+      backupExistingProgress();
+      const merged = mergeProgressState(state, payload);
+      replaceRuntimeState(merged);
+      setSyncStatus(`${source}已合并。刷新后也会保留。`);
+    }
+
+    function bytesToBase64Url(bytes) {
+      let binary = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.slice(i, i + chunk));
+      }
+      return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    }
+
+    function base64UrlToBytes(value) {
+      const base64 = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+
+    async function makeSyncCodeFromText(text) {
+      const bytes = new TextEncoder().encode(text);
+      if ("CompressionStream" in window) {
+        const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"));
+        const compressed = new Uint8Array(await new Response(stream).arrayBuffer());
+        return `ICTSM-GZ1.${bytesToBase64Url(compressed)}`;
+      }
+      return `ICTSM-B64.${bytesToBase64Url(bytes)}`;
+    }
+
+    async function readSyncCodeToText(code) {
+      const clean = String(code || "").trim().replace(/\s+/g, "");
+      if (!clean) throw new Error("同步码是空的。");
+      if (clean.startsWith("ICTSM-GZ1.")) {
+        if (!("DecompressionStream" in window)) throw new Error("这个浏览器不支持解压同步码，请改用导入 JSON。");
+        const bytes = base64UrlToBytes(clean.slice("ICTSM-GZ1.".length));
+        const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+        return await new Response(stream).text();
+      }
+      if (clean.startsWith("ICTSM-B64.")) {
+        return new TextDecoder().decode(base64UrlToBytes(clean.slice("ICTSM-B64.".length)));
+      }
+      throw new Error("同步码格式不对，请复制完整的 ICTSM- 开头内容。");
+    }
+
+    async function generateSyncCode() {
+      setSyncStatus("正在生成同步码...");
+      const code = await makeSyncCodeFromText(JSON.stringify(progressPayload()));
+      $("syncCode").value = code;
+      $("syncCode").select();
+      setSyncStatus(`同步码已生成（${Math.ceil(code.length / 1024)} KB）。复制到手机后点“应用同步码”。`);
+    }
+
+    async function copySyncCode() {
+      const code = $("syncCode").value.trim();
+      if (!code) {
+        setSyncStatus("先点“生成同步码”。");
+        return;
+      }
+      $("syncCode").select();
+      try {
+        await navigator.clipboard.writeText(code);
+        setSyncStatus("同步码已复制。到另一台设备粘贴后点“应用同步码”。");
+      } catch {
+        setSyncStatus("浏览器不允许自动复制；已选中文本，请手动复制。");
+      }
+    }
+
+    async function applySyncCode() {
+      try {
+        setSyncStatus("正在应用同步码...");
+        const text = await readSyncCodeToText($("syncCode").value);
+        await importProgressText(text, "同步码");
+      } catch (error) {
+        setSyncStatus(`同步失败：${error.message}`);
+      }
+    }
     const norm = (s) => s.toLowerCase();
     const glossary = [
       {id:"business-process", term:"Business process", zh:"业务流程", chapter:"Chapter 2", aliases:["business process", "business processes"], explain:"A structured set of activities performed in an organization to create value for customers, citizens, or internal stakeholders.", tip:"Exam cue: distinguish process from activity and business function."},
@@ -6699,6 +6924,24 @@
     };
     $("runAiReview").onclick = runAiReview;
     $("copyReviewData").onclick = copyReviewData;
+    $("exportProgress").onclick = downloadProgress;
+    $("importProgress").onclick = () => $("importProgressFile").click();
+    $("importProgressFile").onchange = async event => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      try {
+        await importProgressText(await file.text(), "JSON 进度文件");
+      } catch (error) {
+        setSyncStatus(`导入失败：${error.message}`);
+      } finally {
+        event.target.value = "";
+      }
+    };
+    $("makeSyncCode").onclick = () => {
+      generateSyncCode().catch(error => setSyncStatus(`生成失败：${error.message}`));
+    };
+    $("copySyncCode").onclick = copySyncCode;
+    $("applySyncCode").onclick = applySyncCode;
     $("reset").onclick = () => {
       if (!confirm("确定清空本地复习进度吗？题库不会删除。")) return;
       localStorage.removeItem(storeKey);
