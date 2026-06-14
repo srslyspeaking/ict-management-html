@@ -646,9 +646,25 @@
 
     .essay-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
-      gap: 14px;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.75fr);
+      gap: 18px;
       align-items: start;
+    }
+
+    .essay-layout > .ai-box {
+      position: sticky;
+      top: 18px;
+      max-height: calc(100vh - 36px);
+      overflow: auto;
+    }
+
+    .essay-layout > .ai-box h3 {
+      margin-top: 0;
+    }
+
+    .essay-layout > .ai-box h3 + .essay-rubric,
+    .essay-layout > .ai-box h3 + .essay-ai-feedback {
+      margin-bottom: 14px;
     }
 
     .essay-answer {
@@ -682,6 +698,19 @@
       color: var(--brand);
       font-weight: 800;
       margin-right: 4px;
+    }
+
+    .essay-ai-feedback {
+      max-height: 48vh;
+      overflow: auto;
+      margin: 0;
+    }
+
+    .essay-model-answer {
+      grid-column: 1 / -1;
+      margin-top: 2px;
+      background: #fbfcfb;
+      border-color: #cbd8d9;
     }
 
     .case-material {
@@ -1236,6 +1265,14 @@
       }
       .ai-grid { grid-template-columns: 1fr; }
       .essay-layout { grid-template-columns: 1fr; }
+      .essay-layout > .ai-box {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+      .essay-ai-feedback {
+        max-height: none;
+      }
       .essay-answer { min-height: 150px; }
       #essayView {
         padding-bottom: 150px;
@@ -1475,7 +1512,6 @@
                 <button id="clearEssayAnswer" type="button">清空答案</button>
                 <span id="voiceStatus" class="voice-status">支持浏览器会使用系统语音识别；不支持时仍可手打。</span>
               </div>
-              <div id="essayFeedback" class="explain" hidden></div>
               <div id="essaySource" class="source-note"></div>
               <div class="progress"><div id="essayProgress" class="bar"></div></div>
               <div class="row essay-float-nav">
@@ -1488,8 +1524,11 @@
             <div class="ai-box">
               <h3>答题提示 / Quick cues</h3>
               <div id="essayRubric" class="essay-rubric"></div>
+              <h3>AI 评分复盘 / AI feedback</h3>
+              <div id="essayFeedback" class="explain essay-ai-feedback" hidden></div>
               <div id="essayStatus" class="ai-status">大题来自书、练习、Stuvia review 和 case 题；适合练英文考试表达。</div>
             </div>
+            <div id="essayModelAnswer" class="explain essay-model-answer" hidden></div>
           </div>
         </article>
       </section>
@@ -4208,12 +4247,7 @@
             t: card.t.includes("Stuvia") ? "Source Essay" : "Card Essay",
             q: split.q,
             a: split.a,
-            rubric: [
-              "Answer the actual question directly",
-              "Use the correct English course terms",
-              "Include the main distinctions or process steps",
-              "Add a short example when the question is conceptual"
-            ]
+            rubric: []
           };
         });
     }
@@ -5513,7 +5547,7 @@
     }
 
     function submittedEssayRecord(record) {
-      return Boolean(record && (record.feedback || Number.isFinite(record.score) || record.correct || record.wrong));
+      return Boolean(record && (record.feedback || record.modelAnswer || Number.isFinite(record.score) || record.correct || record.wrong));
     }
 
     function hasMeaningfulRecord(type, item) {
@@ -5926,12 +5960,111 @@
       return text.length > 72 ? `${text.slice(0, 69).trim()}...` : text;
     }
 
+    function isGenericEssayCue(point) {
+      return [
+        "answer the actual question directly",
+        "use the correct english course terms",
+        "include the main distinctions or process steps",
+        "add a short example when the question is conceptual"
+      ].includes(norm(String(point || "")));
+    }
+
+    function compactCue(text) {
+      return String(text || "")
+        .replace(/^A strong answer\s+/i, "")
+        .replace(/^The answer should\s+/i, "")
+        .replace(/^This answer should\s+/i, "")
+        .replace(/^For the basic system,\s*/i, "")
+        .replace(/\s+/g, " ")
+        .replace(/\.$/, "")
+        .trim();
+    }
+
+    function extractAnswerTerms(text) {
+      const source = String(text || "");
+      const known = [
+        "business process", "value chain", "value system", "supply chain",
+        "operational benefits", "tactical benefits", "strategic benefits",
+        "business process", "data", "application", "infrastructure",
+        "service type", "service class", "service unit", "service catalog",
+        "ITIL", "ISO/IEC 20000", "IT4IT", "CMMI-SVC", "IaaS", "PaaS", "SaaS",
+        "outsourcing", "cloud computing", "full cost recovery", "charge-out",
+        "NPV", "IRR", "event", "incident", "problem", "standard change",
+        "normal change", "urgent change", "MTBF", "MTTR", "availability",
+        "supplier classification", "commodity", "tactical", "strategic",
+        "ISO/IEC 38500", "COBIT", "goals cascade", "Evaluate", "Direct", "Monitor",
+        "Strategic Impact Grid", "Strategic Alignment Model", "strategy execution",
+        "technology transformation", "competitive potential", "service level",
+        "financial focus", "operational focus", "product focus", "customer focus",
+        "diversification", "replication", "coordination", "unification"
+      ];
+      const found = [];
+      known.forEach(term => {
+        const re = new RegExp(`\\b${escapeRegExp(term)}\\b`, "i");
+        if (re.test(source) && !found.some(x => norm(x) === norm(term))) found.push(term);
+      });
+      const acronyms = source.match(/\b[A-Z][A-Z0-9/-]{1,}(?:\s*&\s*[A-Z][A-Za-z]+)?\b/g) || [];
+      acronyms.forEach(term => {
+        if (term.length <= 2 && !["IT"].includes(term)) return;
+        if (!found.some(x => norm(x) === norm(term))) found.push(term);
+      });
+      return found.slice(0, 8);
+    }
+
+    function splitAnswerIdeas(text) {
+      return String(text || "")
+        .replace(/^EN:\s*/i, "")
+        .split(/(?:\n+|(?<=[.!?])\s+|;\s+)/)
+        .map(compactCue)
+        .filter(line => line.length >= 24 && !/^中文[:：]/.test(line))
+        .filter((line, index, arr) => arr.findIndex(x => norm(x) === norm(line)) === index);
+    }
+
+    function answerCueCandidates(item) {
+      const answer = item.a || "";
+      const question = item.q || "";
+      const terms = extractAnswerTerms(`${question} ${answer}`);
+      const ideas = splitAnswerIdeas(answer);
+      const cues = [];
+      if (terms.length) cues.push(`Key terms: ${terms.slice(0, 5).join(" / ")}`);
+      const formula = answer.match(/(?:NPV|IRR|MTBF|MTTR|availability|unavailability|β|sum|CF_t|1\s*-\s*)[^.。\n]{8,100}/i);
+      if (formula) cues.push(`Formula or logic: ${compactCue(formula[0])}`);
+      ideas
+        .sort((a, b) => {
+          const score = line => (terms.some(term => norm(line).includes(norm(term))) ? 2 : 0) + (/\d|:|->|=|because|therefore|so |if /i.test(line) ? 1 : 0);
+          return score(b) - score(a);
+        })
+        .slice(0, 4)
+        .forEach(line => cues.push(line));
+      (item.rubric || [])
+        .filter(point => !isGenericEssayCue(point))
+        .map(cueFromRubric)
+        .filter(Boolean)
+        .forEach(line => cues.push(line));
+      const unique = cues
+        .map(compactCue)
+        .filter(Boolean)
+        .filter((line, index, arr) => arr.findIndex(x => norm(x) === norm(line)) === index)
+        .slice(0, 5);
+      if (!unique.length) unique.push(`Question focus: ${compactCue(item.q).replace(/^EN:\s*/i, "").slice(0, 92)}`);
+      return unique;
+    }
+
     function essayCueHtml(item) {
-      const points = (item.rubric || []).slice(0, 5);
-      if (!points.length) return `<div><span class="cue-label">Cue</span>Use definitions, contrast, example, and conclusion.</div>`;
+      const points = answerCueCandidates(item);
       return points.map((point, index) => (
-        `<div><span class="cue-label">Cue ${index + 1}</span>${escapeHtml(cueFromRubric(point))}</div>`
+        `<div><span class="cue-label">Cue ${index + 1}</span>${escapeHtml(point.length > 96 ? `${point.slice(0, 93).trim()}...` : point)}</div>`
       )).join("");
+    }
+
+    function referenceFeedbackHtml(item, record) {
+      let model = record?.modelAnswer || "";
+      if (!model && /^参考答案[:：]/.test(record?.feedback || "")) {
+        model = String(record.feedback).replace(/^参考答案[:：]\s*/i, "").split(/\n\s*评分要点[:：]/)[0].trim();
+      }
+      if (!model) return "";
+      const rubrics = answerCueCandidates(item).map(point => `Cue: ${point}`).join("\n");
+      return formattedReviewHtml(`参考答案 / Reference answer\n${model}${rubrics ? `\n\n答题提示 / Quick cues\n${rubrics}` : ""}`);
     }
 
     function renderEssay() {
@@ -5943,6 +6076,8 @@
         $("essayMaterial").innerHTML = "";
         $("essayAnswer").value = "";
         $("essayFeedback").hidden = true;
+        $("essayModelAnswer").hidden = true;
+        $("essayModelAnswer").innerHTML = "";
         $("essaySource").innerHTML = "";
         $("essayRubric").innerHTML = "";
         $("essayProgress").style.width = "0%";
@@ -5959,8 +6094,12 @@
       $("essayAnswer").value = record.answer || "";
       $("essaySource").innerHTML = `<strong>来源 / Source:</strong> ${sourceFor(item, "essay")}`;
       $("essayRubric").innerHTML = essayCueHtml(item);
-      $("essayFeedback").hidden = !record.feedback;
-      $("essayFeedback").innerHTML = record.feedback ? formattedReviewHtml(record.feedback) : "";
+      const aiFeedback = record.feedback && !/^参考答案[:：]/.test(record.feedback) ? record.feedback : "";
+      $("essayFeedback").hidden = !aiFeedback;
+      $("essayFeedback").innerHTML = aiFeedback ? formattedReviewHtml(aiFeedback) : "";
+      const modelHtml = referenceFeedbackHtml(item, record);
+      $("essayModelAnswer").hidden = !modelHtml;
+      $("essayModelAnswer").innerHTML = modelHtml;
       $("essayProgress").style.width = `${(state.essayIndex + 1) / list.length * 100}%`;
     }
 
@@ -5985,7 +6124,8 @@
         "What is correct: ...",
         "Missing points: ...",
         "How to improve in exam English: ...",
-        "Model answer in 4-6 sentences: ..."
+        "Model answer in 4-6 sentences: ...",
+        "Example answer memorization tips: Give 2-4 practical tips in Chinese for memorizing and reproducing the model answer in English. Include a short structure formula, key trigger words, and one sentence skeleton the student can reuse."
       ].join("\n");
     }
 
@@ -6015,12 +6155,12 @@
         return;
       }
       if (!apiKey) {
-        const feedback = `未填写 API key，无法自动评分。\n\n参考答案：${item.a}\n\n评分要点：${(item.rubric || []).join("；")}`;
+        const feedback = `未填写 API key，无法自动评分。\n\n你可以先看下方参考答案，并按右侧 Quick cues 自测是否覆盖关键点。`;
         if (state.retake.essay === item.id) delete state.retake.essay;
         sessionSeen.essay.add(item.id);
         const previous = state.essay[item.id] || {};
         const attempts = Number(previous.attempts || (submittedEssayRecord(previous) ? 1 : 0)) + 1;
-        state.essay[item.id] = {...previous, answer, feedback, score: null, correct: false, wrong: true, attempts, draft: false, ts: new Date().toISOString()};
+        state.essay[item.id] = {...previous, answer, feedback, modelAnswer: item.a, modelRubric: item.rubric || [], score: null, correct: false, wrong: true, attempts, draft: false, ts: new Date().toISOString()};
         $("essayStatus").textContent = "未填写 API key，已显示参考评分要点。";
         save();
         renderEssay();
@@ -6052,12 +6192,12 @@
         state.essay[item.id] = {answer, feedback, score, correct: score !== null ? score >= 7 : false, wrong: score !== null ? score < 7 : false, attempts, draft: false, ts: new Date().toISOString()};
         $("essayStatus").textContent = "评分完成。";
       } catch (error) {
-        const feedback = `GPT 评分失败：${error.message}\n\n参考答案：${item.a}\n\n评分要点：${(item.rubric || []).join("；")}`;
+        const feedback = `GPT 评分失败：${error.message}\n\n你可以先看下方参考答案，并按右侧 Quick cues 自测是否覆盖关键点。`;
         if (state.retake.essay === item.id) delete state.retake.essay;
         sessionSeen.essay.add(item.id);
         const previous = state.essay[item.id] || {};
         const attempts = Number(previous.attempts || (submittedEssayRecord(previous) ? 1 : 0)) + 1;
-        state.essay[item.id] = {...previous, answer, feedback, score: null, correct: false, wrong: true, attempts, draft: false, ts: new Date().toISOString()};
+        state.essay[item.id] = {...previous, answer, feedback, modelAnswer: item.a, modelRubric: item.rubric || [], score: null, correct: false, wrong: true, attempts, draft: false, ts: new Date().toISOString()};
         $("essayStatus").textContent = "评分失败，已显示参考答案。";
       } finally {
         $("floatGradeEssay").disabled = false;
@@ -6077,7 +6217,9 @@
       state.essay[item.id] = {
         ...previous,
         answer,
-        feedback: `参考答案：${item.a}\n\n评分要点：${(item.rubric || []).join("；")}`,
+        feedback: previous.feedback || "",
+        modelAnswer: item.a,
+        modelRubric: item.rubric || [],
         score: previous.score ?? null,
         attempts,
         draft: false,
