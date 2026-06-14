@@ -627,21 +627,48 @@
       font-size: 14px;
     }
 
-    .score-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: fit-content;
-      min-width: 76px;
-      min-height: 42px;
-      padding: 8px 12px;
+    .case-material {
+      border: 1px solid var(--line);
       border-radius: 8px;
-      background: #ecfdf5;
-      border: 1px solid #99f6e4;
-      color: #0f766e;
-      font-weight: 800;
-      font-size: 20px;
-      font-variant-numeric: tabular-nums;
+      background: #fbfcfb;
+      padding: 12px;
+      margin: 10px 0 12px;
+      display: grid;
+      gap: 10px;
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .case-material h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .case-material p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .case-material ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .case-material .formula {
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #f3f7f8;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-x: auto;
+    }
+
+    .material-image {
+      width: 100%;
+      max-height: 520px;
+      object-fit: contain;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
     }
 
     .essay-tools {
@@ -1088,7 +1115,7 @@
         margin-left: -4px;
         margin-right: -4px;
         display: grid;
-        grid-template-columns: 44px 1fr 1fr;
+        grid-template-columns: 44px 1fr 1fr 1fr;
       }
       .essay-float-nav #prevEssay {
         width: 44px;
@@ -1273,38 +1300,27 @@
             <div>
               <div id="essayMeta" class="meta"></div>
               <h2 id="essayQuestion"></h2>
+              <div id="essayMaterial" class="case-material" hidden></div>
               <textarea id="essayAnswer" class="essay-answer" placeholder="用英文作答；可以先列 bullet points，再整理成完整答案。"></textarea>
               <div class="essay-tools">
                 <button id="voiceEssay" type="button">语音输入 / Dictate</button>
                 <button id="clearEssayAnswer" type="button">清空答案</button>
                 <span id="voiceStatus" class="voice-status">支持浏览器会使用系统语音识别；不支持时仍可手打。</span>
               </div>
-              <div class="row" style="margin-top:12px">
-                <button id="gradeEssay" class="primary">AI 评分 / Grade</button>
-                <button id="showEssayModel">参考答案 / Model</button>
-              </div>
               <div id="essayFeedback" class="explain" hidden></div>
               <div id="essaySource" class="source-note"></div>
               <div class="progress"><div id="essayProgress" class="bar"></div></div>
               <div class="row essay-float-nav">
                 <button id="prevEssay" class="icon" title="上一题">‹</button>
+                <button id="showEssayModel">参考答案 / Model</button>
                 <button id="floatGradeEssay" class="primary">AI 评分</button>
                 <button id="nextEssay" class="primary">下一道大题</button>
               </div>
             </div>
             <div class="ai-box">
-              <h3>评分设置 / Grading</h3>
-              <div class="ai-controls">
-                <input id="essayApiKey" type="password" autocomplete="off" placeholder="OpenAI API key，临时输入，不写进文件">
-                <select id="essayModel">
-                  <option value="gpt-5.5">gpt-5.5</option>
-                  <option value="gpt-4.1-mini">gpt-4.1-mini</option>
-                  <option value="gpt-4o-mini">gpt-4o-mini</option>
-                </select>
-                <div id="essayScore" class="score-badge">未评分</div>
-                <div id="essayRubric" class="essay-rubric"></div>
-                <div id="essayStatus" class="ai-status">大题来自书、练习、Stuvia review 和 case 题；适合练英文考试表达。</div>
-              </div>
+              <h3>评分要点 / Rubric</h3>
+              <div id="essayRubric" class="essay-rubric"></div>
+              <div id="essayStatus" class="ai-status">大题来自书、练习、Stuvia review 和 case 题；适合练英文考试表达。</div>
             </div>
           </div>
         </article>
@@ -1658,8 +1674,8 @@
       {
             "c": "2",
             "t": "Stuvia Review",
-            "q": "EN: Discuss the groups of business processes along the value chain. The activities in the value chain can be seen as business processes.",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Discuss the groups of business processes along the value chain.",
+            "a": "EN: The activities in the value chain can be seen as groups of business processes: each of Porter's value-chain business functions groups together several related business processes.\n\nPrimary activities (deliver the product/service to the customer):\n- Inbound logistics: receipt, storage and distribution of raw materials\n- Operations: converting raw materials into finished products/services\n- Outbound logistics: storage, transportation and order processing to get finished products to customers\n- Marketing and sales: promotion, pricing, making offers, sales transactions\n- Service: post-sales support, installation, repairs, training\n\nSupport activities (let the primary activities run smoothly):\n- Firm infrastructure: general management, financial management, plant management (including IT)\n- Human resource management: selection, hiring and management of employees\n- Technology development: R&D and process automation\n- Procurement: acquiring raw materials and services\n\nEach of these business functions is therefore a group of related business processes, and the margin is the difference between the total value created and the total cost of running all these process groups."
       },
       {
             "c": "2",
@@ -1706,8 +1722,8 @@
       {
             "c": "2",
             "t": "Stuvia Review",
-            "q": "EN: Explain how the use of information technology may lead to a competitive advantage, even when IT resources are commodities. IT capabilities (= how an organization uses its resources) take years to develop",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Explain how the use of information technology may lead to a competitive advantage, even when IT resources are commodities.",
+            "a": "EN: When we say IT is a commodity, we should distinguish IT resources from IT capabilities.\n- IT resources are the hardware, software and people available on the market; these have largely become commodities, so by themselves they do not create differences between organizations.\n- IT capabilities are the way an organization uses these resources: selecting the right resources, using them correctly and efficiently, and managing them well (e.g. implementing the most appropriate integrated information systems). IT capabilities (= how an organization uses its resources) take years to develop, and not all organizations develop them to the same level.\n\nSo organizations cannot differentiate themselves through their IT resources, but they can gain a competitive advantage through superior IT capabilities - just as better marketing or manufacturing capabilities create competitive differences elsewhere. However, such an advantage is limited in time: technological progress erodes it within a few years, so an organization must continually renew its IT resources and keep developing its IT capabilities."
       },
       {
             "c": "3",
@@ -1856,8 +1872,8 @@
       {
             "c": "3",
             "t": "Stuvia Review",
-            "q": "EN: Describe the general framework for information systems: define and describe the components of this framework: the IT systems, the IT management and IT governance. - IT systems refer to the hardware, software, and network infrastructure that enable the storage, processing, and transmission of information within an organization. - IT management involves the planning, organizing, and coordinating of resources and activities related to the use and maintenance of IT systems. It focuses on ensuring that IT resources are effectively utilized to support the organization's goals and objectives. - IT governance: It provides a structure for aligning IT activities with the organization's objectives.",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Describe the general framework for information systems: define and describe the components of this framework: the IT systems, the IT management and IT governance.",
+            "a": "EN: The framework for information management has three main components, plus a cross-cutting element:\n- IT systems: the hardware, software and network infrastructure that store, process and transmit information; split into four domains (business processes, data, applications, infrastructure) and evolving through a life cycle.\n- IT management: the activities of the IT function that manage these IT systems, e.g. project management, operations management, financial management, supplier management and human resource management.\n- IT governance: the activities that regulate the relationship between the business and the IT function, making sure IT does what the business needs and that business and IT stay aligned.\n- Concerns: the worries/issues of stakeholders (security, cost, compliance, service levels) that run through governance, management and the whole life cycle of the information systems.\n\nRelationship: the information systems are managed by IT management, while IT management itself is governed by the business through IT governance; the concerns apply throughout."
       },
       {
             "c": "3",
@@ -1880,8 +1896,8 @@
       {
             "c": "3",
             "t": "Stuvia Review",
-            "q": "EN: Describe the IT management activities. - Project Management: Project management involves planning, organizing, and controlling resources to successfully complete IT projects within defined constraints such as scope, time, and budget. - Operations management focuses on the day-to-day activities required to keep IT systems and infrastructure running smoothly. - Services delivery management is concerned with the planning, coordination, and delivery of IT services to users and customers. - Financial management involves managing the budgeting, costing, and financial aspects of IT operations and projects. - Quality management focuses on ensuring the quality and reliability of IT systems and services. - Supplier management involves managing relationships with external IT vendors and suppliers. - Human resource management involves managing the IT workforce, including recruitment, training, performance management, and career development.",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Describe the IT management activities.",
+            "a": "EN: - Project management: planning, organizing and controlling resources to successfully complete IT projects within defined constraints such as scope, time and budget.\n- Operations management: the day-to-day activities required to keep IT systems and infrastructure running smoothly.\n- Services delivery management: planning, coordination and delivery of IT services to users and customers.\n- Financial management: managing the budgeting, costing and financial aspects of IT operations and projects.\n- Quality management: ensuring the quality and reliability of IT systems and services.\n- Supplier management: managing relationships with external IT vendors and suppliers.\n- Human resource management: managing the IT workforce, including recruitment, training, performance management and career development."
       },
       {
             "c": "3",
@@ -1893,7 +1909,7 @@
             "c": "3",
             "t": "Stuvia Review",
             "q": "EN: Describe the IT governance activities. - Business-IT alignment - Set-up and maintain IT decision structures (establishing clear roles, responsibilities, and decision-making processes within the organization's IT governance framework) - Exert control",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "a": "EN: - Business-IT alignment: the way IT functions in an organization should be in line with the business; e.g. organizations that critically depend on IT should implement redundant hardware and plan for the mitigation of serious incidents and disasters.\n- Setting up and maintaining IT decision structures: decisions on IT and its use should be taken jointly by business people and IT management. Management sets up consulting/decision-making structures such as an IT steering committee, an IT architecture board and a change committee, which meet regularly and whose decisions are implemented throughout the organization.\n- Exerting control: a control is any means to ensure business goals are met as required (structures, regulations, procedures, reviews, audits, ...). By exerting control over the IT function, the organization ensures IT delivers value to the business.\n\nFrameworks such as COBIT support and structure these IT governance activities."
       },
       {
             "c": "3",
@@ -1910,8 +1926,8 @@
       {
             "c": "3",
             "t": "Stuvia Review",
-            "q": "EN: Give four aspects of usability -> See above",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Give four aspects of usability.",
+            "a": "EN: Usability = the extent to which a system is easy to use, manage and support. Its four aspects are:\n- User-friendliness: how easy the system is to use (and to learn) for end users.\n- Maintainability: how easy it is to correct, update and support the system.\n- Administrator (-friendliness): how easy the system is to manage/administer.\n- Scalability: how well the system can grow to handle more users, data or load."
       },
       {
             "c": "3",
@@ -2042,20 +2058,20 @@
       {
             "c": "13",
             "t": "Stuvia Review",
-            "q": "EN: Explain what IT services are what the basic principles of IT services provision are. IT services refer to the delivery of technology-related solutions and support to meet the business needs of an organization, and the basic principles of IT services provision involve ensuring the alignment of IT services with business objectives, delivering value to customers, and maintaining consistent service quality and improvement.",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Explain what IT services are and what the basic principles of IT services provision are.",
+            "a": "EN: A service is a means for a customer to obtain value without having to invest in the resources that deliver that value (e.g. a phone service gives you calls without owning the network; a laundry service washes clothes without you owning a washing machine).\n\nAn IT service, delivered by an IT services provider (the \"IT department\"), gives users value through the use of IT systems - again without the users having to invest in PCs, servers, software or network equipment or hire system engineers themselves; the IT department takes care of the systems, their operation and maintenance.\n\nThis turns users into \"customers\" and the IT department into a \"supplier\", even if the department is internal. Basic principles of IT services provision:\n- A services catalog clearly describes the services the IT department supplies and their prices.\n- Each service has a \"service unit\" (unit of consumption) with a unit price; users are charged per unit consumed, so the IT department can recover its costs and make users cost-aware.\n- Customers and the IT department agree on the minimum quality of each service - these minimum-quality requirements are \"service levels\", and the mutual agreements on them are \"service level agreements\" (SLAs)."
       },
       {
             "c": "13",
             "t": "Stuvia Review",
-            "q": "EN: Describe what efficiency and effectiveness of IT services is and what the difference between these two service properties is. Efficiency relates to optimizing resource utilization and minimizing waste in delivering IT services, while effectiveness focuses on achieving desired outcomes.",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Describe what efficiency and effectiveness of IT services is and what the difference between these two service properties is.",
+            "a": "EN: Service quality is a combination of effectiveness and efficiency:\n- Effectiveness: a service is effective when it provides the right functionality to the user - it does the \"correct thing\" and correctly supports the business process. An ineffective service does not contribute to the outcome of the process it should support (e.g. using a spreadsheet to manage gigabytes of structured, linked data is ineffective - wrong tool for the job).\n- Efficiency: a service is efficient when it has sufficient capacity and performance to be used without unwanted delays or other problems. Slow computers and unresponsive databases are inefficient.\n\nDifference: effectiveness is about doing the right thing (matching functionality to the need); efficiency is about doing it well/fast enough (performance). A high-quality service is both effective and efficient. An effective-but-inefficient service offers the right functionality but is unacceptably slow; an efficient-but-ineffective service performs well but isn't what the user actually needs."
       },
       {
             "c": "13",
             "t": "Stuvia Review",
-            "q": "EN: Describe the three types of IT services. Give an example of each. 1) End-user services: offered to and used by end-users (e.g. desktop PC service) 2) Basic services: services required to implement end-user services (e.g. network connection) 3) Extra services: enhance value of end-user services (e.g. maintenance and repair)",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Describe the three types of IT services. Give an example of each.",
+            "a": "EN: Services often contain other services, so it is useful to distinguish three types:\n1) End-user services - the services offered to and used directly by end users; they can contain basic services and can be \"augmented\" by extra services. Example: the \"Desktop PC\" service.\n2) Basic services - services needed to implement end-user services (the building blocks behind the scenes). Example: \"Network connection\" and \"Network storage\", which the Desktop PC service relies on.\n3) Extra services - services offered to end users in addition to an end-user service, enhancing its value. Example: \"Maintenance and repair\" offered as an extra service on top of the Desktop PC service."
       },
       {
             "c": "13",
@@ -2090,8 +2106,8 @@
       {
             "c": "13",
             "t": "Stuvia Review",
-            "q": "EN: Organizations can outsource different aspects of their IT. Describe the different possibilities, each leading to a different “kind” of outsourcing. - Desktop outsourcing - Application outsourcing - Server outsourcing - Support outsourcing - Complete outsourcing",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Organizations can outsource different aspects of their IT. Describe the different possibilities, each leading to a different \"kind\" of outsourcing.",
+            "a": "EN: - Complete outsourcing: all aspects of IT are outsourced to the external provider.\n- Support (system support) outsourcing: the external provider is responsible for the daily operations and management of the infrastructure and applications; the organization keeps the strategic aspects and planning managed by its own staff.\n- Server outsourcing: the organization \"rents\" server/processor capacity from the external provider but remains responsible for the applications.\n- Application outsourcing: the organization uses an application that is operated, managed and maintained by the external provider.\n- Desktop outsourcing: the external provider sets up, manages and maintains the users' client PCs (\"on the desktop\"), sometimes including file/print servers, peripherals and the LAN; the organization itself remains responsible for the application servers and applications."
       },
       {
             "c": "13",
@@ -2102,14 +2118,14 @@
       {
             "c": "13",
             "t": "Stuvia Review",
-            "q": "EN: Define what cloud computing is. Cloud computing refers to the utilization of remote servers, typically hosted on the internet, to store, manage, process, and access data and applications, offering on -demand availability of computing resources without the need for local infrastructure.",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Define what cloud computing is.",
+            "a": "EN: Cloud computing is defined as \"a model for enabling ubiquitous, convenient, on-demand network access to a shared pool of configurable resources that can be rapidly provisioned and released with minimal effort or service interaction\" (NIST definition).\n\nIn practice, applications and data do not reside on private, dedicated servers but on large shared installations accessible over a network (usually the Internet); the exact nature of that underlying installation is irrelevant to the user as long as the service (using the application, accessing the data) works correctly - hence the \"cloud\" metaphor: everything is hidden inside a misty cloud. Cloud computing is therefore a form of outsourcing, where the cloud services are provided by an external cloud service provider such as Google, Microsoft or Amazon."
       },
       {
             "c": "13",
             "t": "Stuvia Review",
-            "q": "EN: Describe the main characteristics of cloud computing. - Ubiquitous: Cloud computing enables access to resources and services from anywhere at any time, as long as there is an internet connection. - Convenient: allowing users to provision and manage computing resources as needed without requiring the intervention of a service provider. Users can easily scale up or down resources, configure settings, and manage their accounts through user-friendly interfaces. - On-demand: ability to rapidly provision and deprovisi on computing resources as per demand. Users can quickly scale resources up or down based on fluctuating needs, ensuring efficient resource utilization and cost optimization. This elasticity allows organizations to dynamically respond to workload variations and handle peak demands without overprovisioning. - Flexible (rapidly acquire more capacity) - Metered use (pay for what you use) - Universal access (from PC’s, tablets, smartphones, …)",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Describe the main characteristics of cloud computing.",
+            "a": "EN: The book lists three main characteristics:\n- Flexible, on-demand service: the user can easily acquire more capacity (processing, storage) or release capacity again, via a simple configuration change rather than elaborate action.\n- Metered use: customers are only charged for the resources they actually use.\n- Universal access: cloud services are accessible from a broad range of clients (PCs, tablets, smartphones) and from many locations (the organization's premises, the Internet, public mobile networks).\n\nThese map onto the more detailed NIST-style description (ubiquitous, convenient, on-demand self-service, rapid elasticity, measured service) - same ideas, more elaborated."
       },
       {
             "c": "13",
@@ -2120,8 +2136,8 @@
       {
             "c": "13",
             "t": "Stuvia Review",
-            "q": "EN: Describe the four ways a provider can offer cloud services to customers. 1) The public cloud: provide services to multiple customers 2) The private cloud: dedicated to a single user 3) The community cloud: shared among a specific group of users 4) The hybrid cloud: Cloud services are a combination of public and private clouds, allowing organizations to leverage the benefits of both by integrating and managing resources across multiple environments, enabling flexibility and scalability.",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Describe the four ways a provider can offer cloud services to customers.",
+            "a": "EN: - Public cloud: the infrastructure is used to provide services to all users; individual customers are kept separated from each other (e.g. by the virtualization tools), so one customer's data is not accessible to others.\n- Private cloud: the infrastructure is reserved for a single customer (e.g. one organization) and physically separated from other customers. Private clouds lack most of the advantages (cost savings, scalability) of cloud computing.\n- Community cloud: the infrastructure is shared by a specific community of customers that typically have common requirements or use common applications.\n- Hybrid cloud: a combination of two or more of the above models, letting an organization integrate and manage resources across multiple environments for more flexibility and scalability."
       },
       {
             "c": "13",
@@ -2138,8 +2154,8 @@
       {
             "c": "13",
             "t": "Stuvia Review",
-            "q": "EN: Describe the basic concepts of ITIL 2011. ITIL = Information Technology Infrastructure Library. ITIL describes best practices for IT management. - Flexible (adaptable to any situation) - Describes architecture to set up IT services - 5 books 1) Service strategy 2) Service design 3) Service transition 4) Service operation 5) Continual service improvement",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Describe the basic concepts of ITIL 2011.",
+            "a": "EN: ITIL (Information Technology Infrastructure Library) is a series of publications describing best practices for organizing and managing IT services provision. It is a best-practices standard, not a normative one: it describes WHAT should be done rather than exactly HOW, so it is flexible and can be adapted to organizations of any size. ITIL has become the de-facto standard for IT services management.\n\nITIL 2011 (released July 2011) consists of 5 books that follow the services life cycle:\n1) Service strategy\n2) Service design\n3) Service transition\n4) Service operation\n5) Continual service improvement\n\nEach book describes the goals and basic concepts of that life-cycle phase, the ITIL processes/activities within it, and the related roles, responsibilities, organizational structure, and methods/techniques/tools."
       },
       {
             "c": "13",
@@ -2186,8 +2202,8 @@
       {
             "c": "13",
             "t": "Stuvia Review",
-            "q": "EN: Briefly describe ITIL IT Service continuity management. A process that focuses on ensuring the continuity of IT services in the event of a disruption or disaster.",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Briefly describe ITIL IT Service continuity management.",
+            "a": "EN: IT Service Continuity Management (ITSCM) is the ITIL service design process that ensures IT services can be restored within agreed timescales after a serious disruption or disaster, so the organization's minimum agreed service levels are maintained.\n\nIn practice this is implemented through an IT continuity / disaster recovery plan, which covers:\n- An action plan describing what to do when a disaster strikes\n- Actions to activate a disaster-recovery (DR) site - redundant remote servers in either \"cold standby\" (off-line) or \"hot standby\" (on-line) mode that can take over operations\n- Follow-up actions and the return to normal operation once the disaster is resolved\n- Regular testing of the plan\n- Creating staff awareness of the plan and everyone's role in it"
       },
       {
             "c": "13",
@@ -2198,8 +2214,8 @@
       {
             "c": "13",
             "t": "Stuvia Review",
-            "q": "EN: Briefly describe the main parts of the ISO/IEC 20000 standard. 1) Service management systems requirements 2) Guidance on the application of service management systems 3) Guidance on scope definition and applicability of ISO/IEC 20000-1 4) Process reference model (-> The most important!!) = A description of your service management system as a whole 5) Exemplar implementation plan for ISO/IEC 20000 9) Guidance on the application of ISO/IEC 20000 to Cloud Services 10) Concepts and terminology 11) Guidance on the relationship between ISO/IEC 20000 and service management frameworks: ITIL 12) Guidance on the relationship between ISO/IEC 20000 and service management frameworks: CMMI-SVC",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Briefly describe the main parts of the ISO/IEC 20000 standard.",
+            "a": "EN: ISO/IEC 20000 is an official ISO standard for IT management. It describes the terminology of IT management, the requirements for an IT service management system (SMS), and gives implementation guidelines and examples. It is split into multiple parts; the most important are:\n- Part 1: Service management system requirements - describes the complete SMS used by the provider to deliver and manage services: the requirements to \"plan, establish, implement, operate, review, maintain and improve\" the SMS.\n- Part 2: Guidance on the application of service management systems - guidance and recommendations for implementing an SMS.\n- Part 4: Process reference model - describes the processes of the service management system as a whole; this is the most important part.\n- Part 5: Exemplar implementation plan for ISO/IEC 20000-1 - an example of how to implement an SMS according to Part 1, using a phased approach (business case, gap analysis, implementation governance).\n\nOther, narrower parts include: Part 3 (scope definition and applicability of ISO/IEC 20000-1), Part 9 (guidance on applying ISO/IEC 20000 to cloud services), Part 10 (concepts and terminology), and Parts 11-12 (relating ISO/IEC 20000 to ITIL and to CMMI-SVC respectively)."
       },
       {
             "c": "13",
@@ -2216,8 +2232,8 @@
       {
             "c": "13",
             "t": "Stuvia Review",
-            "q": "EN: Explain the difference between “ITIL-certified” and “ISO/IEC 20000-certified”. \"ITIL-certified\" refers to individuals who have received training and certification in ITIL (Information Technology Infrastructure Library) best practices, while \"I SO/IEC 20000 - certified\" refers to organizations that have achieved certification for complying with the international standard for IT service management (ISO/IEC 20000).",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Explain the difference between \"ITIL-certified\" and \"ISO/IEC 20000-certified\".",
+            "a": "EN: \"ITIL-certified\" applies to people: ITIL is a best-practices framework, not a normative standard, so an organization cannot be audited against it. Instead, ITIL offers a scheme of certificates (Foundation, Practitioner, Intermediate, Expert, Master) that individuals earn through training and exams on ITIL best practices.\n\n\"ISO/IEC 20000-certified\" applies to organizations: ISO/IEC 20000 is a normative, prescriptive standard, so an organization's IT service management system can be audited against its requirements and certified as compliant.\n\nThe two are connected: most ISO/IEC 20000 processes have an ITIL counterpart, so an organization that already works according to ITIL can usually become ISO/IEC 20000 certified with only minor changes to its processes."
       },
       {
             "c": "13",
@@ -2235,7 +2251,7 @@
             "c": "13",
             "t": "Stuvia Review",
             "q": "EN: What are the five levels of abstraction at which the IT4IT reference architecture is defined?",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "a": "EN: Neither source PDF spells this list out in detail (the textbook only summarizes IT4IT at a high level - see the IT4IT card above). Based on how The Open Group's IT4IT Reference Architecture is structured, the architecture is described top-down through layers such as:\n1) IT Value Chain - the overall view, with the 4 value streams (Strategy to Portfolio, Requirement to Deploy, Request to Fulfill, Detect to Correct).\n2) Value streams - each value chain split into a sequence of value streams/stages.\n3) Activities - the steps within each value stream.\n4) Functional components - the \"building blocks\" that carry out the activities.\n5) Data objects (reference data model) - the data that flows between functional components and ties everything together.\n\nIf your slides give a different/official wording for these five levels, prefer that version - this answer is a best-effort reconstruction, not a direct quote from the course material."
       },
       {
             "c": "13",
@@ -2319,7 +2335,7 @@
             "c": "14",
             "t": "Stuvia Review",
             "q": "EN: Describe activities of handling and fulfilling IT service requests.",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "a": "EN: 1) The customer/user submits a request via one of two channels: the service desk (usual channel, for smaller/standard requests) or the IT services manager (for larger or complex requests).\n2) The request is registered in the customer service request database and briefly evaluated: is it a genuine service request, is the requestor identified and authorized, and is the requested service in the services catalog (if not, it's passed to the services manager)?\n3) The request is categorized as simple or complex.\n4) Simple requests go straight to approval. Complex requests are first examined for urgency, resources needed, estimated lead time, and the financial consequences for the customer and for the IT department.\n5) The request is approved - usually an internal approval by the IT department plus an external approval by the customer.\n6) The approved request is fulfilled: this may involve installing hardware/software, change management and/or configuration changes, normally carried out by technical staff (system engineers/administrators).\n7) The request is closed; the most complex requests may get a request fulfillment review to improve the process. Throughout, the requestor is kept informed of progress."
       },
       {
             "c": "14",
@@ -2330,8 +2346,8 @@
       {
             "c": "14",
             "t": "Stuvia Review",
-            "q": "EN: Describe the parameters and the issues to consider when evaluating a complex service request. - Determine urgency - Resources needed for delivery - Estimated delivery lead time - Financial consequences - Project costs, charge-out - Financial consequences for IT department",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Describe the parameters and the issues to consider when evaluating a complex service request.",
+            "a": "EN: - Urgency: how urgent is fulfilling the request? This determines its priority.\n- Resources needed for delivery: what hardware, software and work are needed to fulfil the request and deliver the service at the requested service level - are these resources available, and if not, can they be acquired (e.g. buying extra hardware/licenses)?\n- Estimated delivery lead time: how long fulfillment will take in total - approval time + time to acquire resources + implementation time of the service itself.\n- Financial consequences for the customer: the new charge to the customer once the requested services are implemented (project costs, charge-out).\n- Financial consequences for the IT department: the extra costs the IT department incurs to fulfil the request."
       },
       {
             "c": "14",
@@ -2913,7 +2929,7 @@
             "c": "17",
             "t": "Stuvia Review",
             "q": "EN: What actions can be taken when a service provider does not meet service levels?",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "a": "EN: Providers should report on actual service levels regularly (e.g. monthly) and meet with the customer to discuss them. When a provider does not meet a promised service level, possible actions are:\n- Discuss the affected service level in a meeting between provider and customer; agree on the reasons and on improvement actions.\n- The provider offers a discount on the charge for the affected service (e.g. 20% off network charges for the next month).\n- The provider pays a fine to the customer, usually proportional to the period or severity of the non-compliance (e.g. a fixed amount per day a project runs late).\n- The service contract is (partly) terminated, either for the affected service or for a broader range of services.\n\nThe action should be proportional to the severity: a first non-compliance is normally remedied by a meeting; repeated non-compliance leads to discounts/fines; termination only follows persistent, unresolved problems."
       },
       {
             "c": "17",
@@ -2930,8 +2946,8 @@
       {
             "c": "17",
             "t": "Stuvia Review",
-            "q": "EN: Explain why the MTBF of a component can be longer than its life time. Because the MTBF calculation is based on the average time between failures for a population of components, which includes both early failures and those that operate for a longer duration.",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Explain why the MTBF of a component can be longer than its life time.",
+            "a": "EN: MTBF is an average computed over a whole population of components, including units that fail early (infant mortality / manufacturing defects) and units that keep operating well beyond the planned lifetime. Because it is an average across many units and failure modes rather than a guarantee for one unit, a single component's expected operating life can be shorter than the MTBF, while the MTBF itself still reflects the mix of early and late failures across the population."
       },
       {
             "c": "17",
@@ -2942,20 +2958,20 @@
       {
             "c": "17",
             "t": "Stuvia Review",
-            "q": "EN: Relate the MTBF and the error rate of a system to the reliability. MTBF (Mean Time Between Failures) and error rate are both key factors in determining the reliability of a system. A higher MTBF value signifies a longer average time between failures and, therefore, indicates a higher level of reliability. A lower error rate indicates a more reliable system with fewer failures occurring within that time frame.",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "q": "EN: Relate the MTBF and the error rate of a system to the reliability.",
+            "a": "EN: MTBF (Mean Time Between Failures) and the error rate λ are inversely related: MTBF = 1/λ. Both describe reliability from opposite directions: a higher MTBF (lower error rate) means failures occur less often on average, so the system is more reliable; a lower MTBF (higher error rate) means more frequent failures and therefore lower reliability. In short, reliability increases with MTBF and decreases with the error rate."
       },
       {
             "c": "17",
             "t": "Stuvia Review",
             "q": "EN: The MTTR consists of several periods of time. Describe these periods of time.",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "a": "EN: MTTR (Mean Time To Repair) is made up of the periods of the incident-handling cycle:\n- Detection time: from the actual failure until the failure/incident is detected or reported (e.g. by monitoring or by a user).\n- Diagnosis time: time needed to determine the cause of the failure.\n- Repair time: time needed to actually fix or replace the faulty component.\n- Recovery/restoration time: time needed to restore the service to normal operation after the repair (e.g. restart systems, reload data, verify the service).\n\nMTTR is the average, over many incidents, of the sum of these periods."
       },
       {
             "c": "17",
             "t": "Stuvia Review",
             "q": "EN: Define the availability of a system in terms of its MTBF and MTTR.",
-            "a": "EN: The Stuvia source leaves this answer blank or refers to earlier material; use the chapter notes/book section to complete it."
+            "a": "EN: Availability = MTBF / (MTBF + MTTR).\n\nMTBF is the average time the system is up and running between failures, and MTTR is the average time needed to repair/restore it after a failure. Availability is the fraction of total time (uptime + downtime) during which the system is actually up and usable: a higher MTBF and/or a lower MTTR both increase availability."
       },
       {
             "c": "17",
@@ -3949,6 +3965,7 @@
       {c:"2", t:"Book Essay", q:"EN: Distinguish operational, tactical, and strategic benefits of information systems. Use examples.", a:"Operational benefits improve day-to-day efficiency, speed, error reduction, or cost. Tactical benefits help management achieve objectives and make better decisions. Strategic benefits affect competitive positioning, strategy, or business model. The same system can move between levels depending on business intent.", rubric:["Defines all three benefit levels","Uses examples rather than just labels","Classifies by business effect, not technology name","Mentions that the same system can support different benefit levels"]},
       {c:"3", t:"Book Essay", q:"EN: Explain the four domains of the information systems framework and why a project can fail when only the application domain is considered.", a:"The domains are business process, data, application, and infrastructure. A project can fail if software is built but business processes are not redesigned, data ownership is unclear, or infrastructure cannot support the application. The framework prevents one-domain thinking and supports alignment across business and technology.", rubric:["Names four domains","Explains each domain briefly","Explains one-domain failure","Connects framework to alignment/management"]},
       {c:"13", t:"Book Essay", q:"EN: Explain IT as a service. Include service type, service class, service unit, and why choosing the wrong service unit matters.", a:"IT as a service means users obtain value without owning all resources that deliver it. Service types/classes describe what is delivered and its quality/business role. The service unit measures consumption, such as PC-year, access-year, mailbox-month, printed page, or GB storage. Wrong units make planning, costing, charge-out, and fairness weak.", rubric:["Explains service logic","Mentions type/class/unit","Gives service-unit examples","Explains planning/costing consequence"]},
+      {c:"13", t:"Exercise Material Essay", q:"EN: Use the KU Leuven service catalog material. Choose suitable service units for at least five services, then identify business processes or parameters that drive consumption volume.", material:`<h3>Exercise material · KU Leuven IT services</h3><img class="material-image" src="itm-material-images/ku-leuven-service-material.png" alt="Original exercise image: KU Leuven IT service catalog and volume-driver questions"><table class="mini-table"><tr><th>Service</th><th>Description / users</th><th>Suggested service unit</th><th>Driver examples</th></tr><tr><td>Administrative applications</td><td>KU Loket, course schedules, room reservation; students, academic staff, administration</td><td>Access x academic year</td><td>Number of students/staff needing access</td></tr><tr><td>E-library access</td><td>Electronic library resources such as LIMO; intranet users</td><td>Usage right x academic year</td><td>Number of active users / subscriptions</td></tr><tr><td>Toledo</td><td>Electronic learning environment; students, teaching staff, administrators</td><td>Access x academic year</td><td>Enrolled courses, students, teaching staff</td></tr><tr><td>Use of applications</td><td>Applications such as Office 365, Maple</td><td>License x academic year</td><td>Number of licensed users</td></tr><tr><td>Computer support</td><td>Support of student/staff computer infrastructure</td><td>Year</td><td>Number of supported users/devices</td></tr><tr><td>Network storage</td><td>Windows network drives</td><td>Fixed storage amount for one academic year</td><td>Number of accounts; student max 100 GB; staff unlimited</td></tr><tr><td>Printing</td><td>Network printer variants: one-sided, two-sided, black-white, color, A4/A3, exam combinations</td><td>Page</td><td>Number of printed pages, exam weeks, prepaid student printing</td></tr></table>`, a:"A strong answer selects units that measure service consumption rather than internal resources: access x academic year for administrative apps, usage right/access x academic year for e-library and Toledo, license x academic year for applications, year or supported user-year for computer support, account/storage-year or fixed storage amount per academic year for network storage, and page for printing. Drivers include number of students/staff, enrolled courses, applications/licenses, supported devices, accounts, storage entitlement, invoice/printing processes, and exam periods. The answer should explain why service units must be understandable, measurable, and related to user value.", rubric:["Uses at least five services from the table","Chooses service units, not internal resource names","Identifies consumption drivers or business processes","Explains why the units are suitable"]},
       {c:"13", t:"Book Essay", q:"EN: Compare outsourcing and cloud computing as sourcing options. Mention IaaS, PaaS, SaaS and typical decision criteria.", a:"Outsourcing delegates IT tasks/services to an external provider; cloud computing provides scalable services through cloud models. IaaS provides infrastructure; PaaS provides platform/runtime; SaaS provides complete applications. Decision criteria include competence, cost, scale, flexibility, control, security, sovereignty, integration, and dependency.", rubric:["Defines outsourcing","Defines cloud service models","Compares control/cost/flexibility/dependency","Uses IaaS/PaaS/SaaS correctly"]},
       {c:"13", t:"Book Essay", q:"EN: Compare ITIL, ISO/IEC 20000, IT4IT, and CMMI-SVC. Why are they not interchangeable?", a:"ITIL is a best-practice framework for IT service management. ISO/IEC 20000 is an auditable/certifiable service management system standard. IT4IT uses value streams and reference architecture for IT management. CMMI-SVC is an improvement/maturity model for services. They differ in purpose: guidance, certification, architecture/value stream, and maturity improvement.", rubric:["Expands or explains each acronym/framework","Distinguishes guidance vs certification","Mentions IT4IT value streams","Mentions CMMI-SVC maturity/improvement"]},
       {c:"14", t:"Book Essay", q:"EN: Explain the difference between service catalog, service request handling, and services planning. Use an out-of-catalog analytics platform as an example.", a:"The service catalog defines available services and requestable items. Service request handling receives, validates, authorizes, and fulfills requests. Services planning forecasts service consumption and required resources. An out-of-catalog analytics platform is not a simple request; it needs validation, planning, approval, resource analysis, and financial impact analysis.", rubric:["Defines service catalog","Defines request handling","Defines services planning","Handles out-of-catalog case correctly"]},
@@ -3958,8 +3975,10 @@
       {c:"16", t:"Book Essay", q:"EN: Explain standard, normal, and urgent changes. Why can installing a network printer be normal rather than standard?", a:"Standard changes are low-risk, routine, pre-approved models. Normal changes need assessment and approval. Urgent changes are expedited to prevent or restore major disruption and are reviewed afterward. Installing a network printer may affect shared network/server/print infrastructure, so it needs normal evaluation rather than being treated as a simple device task.", rubric:["Defines three change types","Mentions risk/pre-approval/urgency","Explains shared infrastructure impact","Applies to network printer"]},
       {c:"17", t:"Book Essay", q:"EN: What makes a service level or SLA acceptable? Rewrite a vague login-time SLA into a good one.", a:"A good service level is measurable, precise, period-based, service-oriented, and states a minimum quality requirement. It includes a measured parameter, threshold, percentage, and period. A good rewrite is: measured monthly, 95% of Intranet logins complete within 10 seconds. Technical router latency alone may be operational level, not customer-facing SLA.", rubric:["Lists acceptability criteria","Includes period/percentage/threshold/service parameter","Provides corrected login example","Distinguishes technical vs service-facing metric"]},
       {c:"17", t:"Calculation Essay", q:"EN: Explain how MTBF, MTTR, and availability are related. How do multiple required components affect availability?", a:"MTBF is mean time between failures; MTTR is mean time to repair. A simple approximation uses unavailability = MTTR/MTBF and availability = 1 - unavailability. If multiple components are required in series, combined availability is the product of component availabilities, so total availability is lower than each individual availability.", rubric:["Defines MTBF","Defines MTTR","Explains availability/unavailability relation","Explains serial component multiplication"]},
+      {c:"17", t:"Exercise Material Essay", q:"EN: Use the composite-system availability material. Calculate the complete system availability for the basic three-tier system and explain how hot standby changes the result.", material:`<h3>Exercise material · Availability of composite systems</h3><img class="material-image" src="itm-material-images/availability-composite-material.png" alt="Original exercise image: composite system availability with hot standby"><p>The information system has three required tiers: database tier, application tier, and presentation tier. All required tiers must be available for the system to be available.</p><table class="mini-table"><tr><th>Tier</th><th>Availability</th></tr><tr><td>Database tier</td><td>99.5%</td></tr><tr><td>Application tier</td><td>98.0%</td></tr><tr><td>Presentation tier</td><td>97.3%</td></tr></table><div class="formula">Basic series system: βs = βDB × βApp × βPres</div><p>Hot standby variant: there are two application-tier components in parallel. The application tier is unavailable only if both application components are unavailable.</p><div class="formula">Parallel application tier: 1 - βApp,Hot = (1 - βApp) × (1 - βApp)</div>`, a:"For the basic system, all three tiers are required, so multiply their availabilities: 99.5% x 98.0% x 97.3% = about 94.9%. With hot standby for the application tier, the application tier availability becomes 1 - (1 - 0.98)^2 = 99.96%. The complete system is then 99.5% x 99.96% x 97.3% = about 96.8%. The key reasoning is series components reduce availability, while parallel redundancy improves one tier's availability.", rubric:["Recognizes series multiplication","Computes basic availability around 94.9%","Computes hot standby application tier around 99.96%","Computes improved system availability around 96.8% and explains why"]},
       {c:"18", t:"Book Essay", q:"EN: Explain supplier classification. How would you classify IBM/mainframe, toner, Cisco-like network equipment, and deep Microsoft platform dependency?", a:"Supplier classification depends on importance, risk, dependency, substitutability, and strategic relationship. IBM/mainframe or deeply integrated Microsoft platform can be strategic if business-critical and hard to replace. Toner is commodity because it is standardized and easy to replace. Cisco-like network equipment may be tactical/important infrastructure but usually more replaceable than a strategic partner.", rubric:["Names classification criteria","Classifies strategic supplier correctly","Classifies commodity supplier correctly","Handles tactical/operational nuance"]},
       {c:"19", t:"Book Essay", q:"EN: Explain major IT personnel roles and map activities to roles: service desk, system administrator, business architect, financial manager, CIO.", a:"Service desk is first contact for incidents, information questions, and service requests. System administrators configure accounts, rights, storage, systems and infrastructure. Business/enterprise architects translate business processes into data/application/infrastructure implications. Financial managers calculate and manage IT costs. CIO is overall IT department manager and links IT to organizational objectives.", rubric:["Explains at least five roles","Maps activities to roles","Distinguishes architecture vs support","Explains CIO responsibility"]},
+      {c:"19", t:"Exercise Material Essay", q:"EN: Use the IT department structure material. Assign the listed IT management processes to suitable IT subdepartments and explain any ambiguous cases.", material:`<h3>Exercise material · Assign processes to IT subdepartments</h3><img class="material-image" src="itm-material-images/it-department-process-material.png" alt="Original exercise image: IT department structure and process assignment"><p>Processes to assign: change handling, resources tracking, financial management, supplier management & procurement, HR management, event handling, incident handling, problem handling, request handling, service level agreements, service planning.</p><table class="mini-table"><tr><th>Subdepartment / function</th><th>Typical processes from the exercise figure</th></tr><tr><td>External to IT department</td><td>HR management can be external to IT, or treated as Management & Staff function in IT</td></tr><tr><td>Management & Staff functions</td><td>Financial management; HR management alternative</td></tr><tr><td>Strategy and Planning</td><td>Service planning; change handling; resources tracking; supplier management & procurement; service level agreements</td></tr><tr><td>Operations and Support</td><td>Request handling; incident handling; event handling; problem handling; service desk; daily operations; support</td></tr><tr><td>Development</td><td>Development teams; not the main home for incident/request/problem handling</td></tr></table>`, a:"A strong answer maps service planning, resources tracking, change handling, supplier management/procurement, and SLA definition/management mainly to Strategy and Planning or coordination/customer management roles. Financial management belongs to Management & Staff functions. HR management may be external to the IT department or an internal management/staff function. Request handling, incident handling, event handling, and problem handling belong mainly to Operations and Support/service desk/support. Development teams are not the normal owner of operational service management processes.", rubric:["Correctly maps operational handling processes to Operations and Support","Correctly maps planning/procurement/SLA work to Strategy and Planning or management roles","Handles HR ambiguity","Explains why Development is not the main owner of service desk processes"]},
       {c:"20", t:"Book Essay", q:"EN: Explain IT governance using ISO/IEC 38500 and COBIT. How do governance and management differ?", a:"IT governance ensures IT supports business objectives and that the right decisions are made at organizational level. ISO/IEC 38500 emphasizes Evaluate, Direct, Monitor. COBIT means Control Objectives for Information and Related Technologies and includes goals cascade from stakeholder needs to enterprise goals, IT-related goals, and enabler/process goals. Governance evaluates/directs/monitors; management plans/builds/runs/monitors IT activities.", rubric:["Explains governance purpose","Mentions Evaluate/Direct/Monitor","Explains COBIT goals cascade","Distinguishes governance from management"]},
       {c:"20", t:"Case Essay", q:"EN: ProBranif has an IT steering committee with top management and IT managers but no user representatives. Explain the governance weakness and propose a better decision structure.", a:"The weakness is decision rights: application and benefit decisions require business/user input, otherwise IT may not align with real needs. Top management and IT managers are necessary but insufficient. A better structure includes top management, CIO/IT managers, and user representatives/divisional reps for application/investment decisions, while technical architecture/infrastructure details remain led by IT specialists.", rubric:["Identifies missing user/business representation","Explains why it is governance, not HR","Separates application decisions from technical decisions","Proposes balanced committee/workgroups"]},
       {c:"20", t:"Case Essay", q:"EN: Explain how to choose between corporate overhead, charge-out, business-unit funding, and hybrid IT funding. Apply it to Lidl, Bol.com, and Philips.", a:"Corporate overhead fits simple/support IT where detailed billing is costly. Charge-out fits measurable consumption and cost accountability. Business-unit funding fits division-specific strategic initiatives. Hybrid combines shared central services and local/BU-specific funding. Lidl store-level measurable retail IT supports charge-out; Bol.com operational systems may use charge-out/accountability and informational systems need investment; Philips as multinational fits hybrid.", rubric:["Explains each funding mechanism","Uses measurability/accountability/complexity","Applies Lidl","Applies Bol.com/Philips"]},
@@ -3967,6 +3986,41 @@
       {c:"21", t:"Case Essay", q:"EN: For KBC, Bol.com, Barry Callebaut, FOD Finance, Lidl, and Philips, explain how clue words in the case lead to focus point or alignment recommendations.", a:"A strong answer avoids company-name stereotypes and reads clue words. KBC: trust, digital channels, banking service -> customer focus/technology transformation/strategic IT. Bol.com: online marketplace, recommendations, digital revenue -> strategic mode/competitive potential/customer focus. Barry Callebaut: high-quality products and innovation -> product focus; manufacturing efficiency wording -> operational focus. FOD Finance: citizen online tax services -> customer focus; tax control wording -> financial focus. Lidl: cost-driven retail/store accountability -> financial/operational and charge-out. Philips: multinational, shared central IT plus division projects -> hybrid funding; innovation/health-tech may point product focus.", rubric:["Uses clue words, not stereotypes","Classifies multiple organizations","Distinguishes focus/Grid/SAM/funding","Explains ambiguous cases"]},
       {c:"21", t:"Book Essay", q:"EN: Explain the four operating models from Ross et al. using process standardization and integration.", a:"Operating model uses two dimensions: process standardization and process/data integration. Diversification is low standardization and low integration. Replication is high standardization but lower integration. Coordination is high integration with lower standardization. Unification is high standardization and high integration. The model influences enterprise architecture.", rubric:["Names two dimensions","Defines four quadrants","Connects to enterprise architecture","Gives example or clue for each"]}
     ];
+
+    function splitSourceEssay(question, answer) {
+      const rawQuestion = String(question || "").replace(/\s+/g, " ").trim();
+      const rawAnswer = String(answer || "").replace(/\s+/g, " ").trim();
+      const prefix = rawQuestion.match(/^EN:\s*/i)?.[0] || "";
+      let body = rawQuestion.replace(/^EN:\s*/i, "").trim();
+      const hardCut = body.search(/\s(?:1\)|➢|- [A-Z][A-Za-z]+:|Advantages Risks|Value systems integrate|It allows for|Moore['’]s Law:|Resource inventory creation|Relationships between the domains:|The book lists)\b/i);
+      const movedByHardCut = hardCut > 35 ? body.slice(hardCut).trim() : "";
+      if (movedByHardCut) body = body.slice(0, hardCut).trim();
+      const sentences = body.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [body];
+      const instructionStarts = /^(also|use|include|give|start|explain|apply|for each|mention|illustrate|compare|distinguish|why|what|how|which|describe|discuss)\b/i;
+      const answerStarts = /^(1\)|2\)|3\)|4\)|5\)|6\)|- |➢|advantages risks|value systems integrate|relationships between|it allows for|moore['’]s law|resource inventory|the book lists|central \+|decentral \+)/i;
+      const kept = [];
+      const moved = [];
+      for (const sentence of sentences) {
+        const clean = sentence.trim();
+        if (!clean) continue;
+        if (!kept.length || instructionStarts.test(clean)) {
+          if (!answerStarts.test(clean)) {
+            kept.push(clean);
+            continue;
+          }
+        }
+        moved.push(clean);
+      }
+      let cleanQuestion = kept.join(" ").trim();
+      if (!cleanQuestion) cleanQuestion = body.split(/\?|\.|:/)[0].trim();
+      if (cleanQuestion && !/[?.!]$/.test(cleanQuestion)) cleanQuestion += "?";
+      let cleanAnswer = [movedByHardCut, moved.join(" ").trim(), rawAnswer].filter(Boolean).join(" ");
+      cleanAnswer = cleanAnswer || rawAnswer;
+      return {
+        q: `${prefix || "EN: "}${cleanQuestion}`.replace(/\s+/g, " ").trim(),
+        a: cleanAnswer.replace(/\s+/g, " ").trim()
+      };
+    }
 
     function makeSourceEssays() {
       const seen = new Set(essayCore.map(item => item.q));
@@ -3979,18 +4033,21 @@
           return card.t.includes("Stuvia Review") || card.answer.length >= 260 || /describe|explain|what are|compare|difference|how does|briefly/i.test(card.q);
         })
         .slice(0, 90)
-        .map(card => ({
-          c: card.c,
-          t: card.t.includes("Stuvia") ? "Source Essay" : "Card Essay",
-          q: card.q,
-          a: card.answer,
-          rubric: [
-            "Answer the actual question directly",
-            "Use the correct English course terms",
-            "Include the main distinctions or process steps",
-            "Add a short example when the question is conceptual"
-          ]
-        }));
+        .map(card => {
+          const split = splitSourceEssay(card.q, card.answer);
+          return {
+            c: card.c,
+            t: card.t.includes("Stuvia") ? "Source Essay" : "Card Essay",
+            q: split.q,
+            a: split.a,
+            rubric: [
+              "Answer the actual question directly",
+              "Use the correct English course terms",
+              "Include the main distinctions or process steps",
+              "Add a short example when the question is conceptual"
+            ]
+          };
+        });
     }
 
     const essays = [...essayCore, ...makeSourceEssays()];
@@ -4717,6 +4774,7 @@
     ];
 
     const storeKey = "ictsm-review-progress-iphone-offline";
+    const progressBackupKey = "ictsm-review-progress-iphone-offline-backup";
     const apiKeyStoreKey = "ictsm-review-openai-api-key-local";
     const modelStoreKey = "ictsm-review-openai-model-local";
     const legacyStoreKeys = [
@@ -4730,6 +4788,22 @@
         return JSON.parse(localStorage.getItem(key) || "null");
       } catch {
         return null;
+      }
+    }
+
+    function backupExistingProgress() {
+      try {
+        const raw = localStorage.getItem(storeKey);
+        if (!raw) return;
+        const backup = readState(progressBackupKey);
+        if (backup?.data === raw) return;
+        localStorage.setItem(progressBackupKey, JSON.stringify({
+          createdAt: new Date().toISOString(),
+          sourceKey: storeKey,
+          data: raw
+        }));
+      } catch {
+        // Backup is best-effort; normal progress saving should continue.
       }
     }
 
@@ -4770,6 +4844,7 @@
       return migrated;
     }
 
+    backupExistingProgress();
     const state = loadState();
     const hasSavedQuizIndex = Number.isInteger(state.quizIndex);
     const hasSavedEssayIndex = Number.isInteger(state.essayIndex);
@@ -4789,17 +4864,18 @@
     state.search ||= "";
     state.retain ||= {};
     state.retake ||= {};
+    const sessionSeen = {quiz: new Set(), cloze: new Set()};
 
     const $ = (id) => document.getElementById(id);
     $("mode").value = state.mode;
     $("search").value = state.search;
     const savedApiKey = localStorage.getItem(apiKeyStoreKey) || "";
     const savedModel = localStorage.getItem(modelStoreKey) || "gpt-5.5";
-    ["globalApiKey", "apiKey", "essayApiKey"].forEach(id => {
+    ["globalApiKey", "apiKey"].forEach(id => {
       const input = $(id);
       if (input) input.value = savedApiKey;
     });
-    ["globalModel", "aiModel", "essayModel"].forEach(id => {
+    ["globalModel", "aiModel"].forEach(id => {
       const select = $(id);
       if (select && [...select.options].some(option => option.value === savedModel)) select.value = savedModel;
     });
@@ -4853,9 +4929,10 @@
       {id:"moores-law", term:"Moore's law", zh:"摩尔定律", chapter:"Chapter 13", aliases:["moore's law", "moores law", "gordon moore"], explain:"Observation associated with Gordon Moore that chip transistor density roughly doubles over time, driving rapid growth in computing capability.", tip:"Do not confuse with Grosch's law: Moore is technology progress; Grosch is cost/capacity scaling."},
       {id:"npv", term:"NPV", zh:"净现值", chapter:"Chapter 15", aliases:["npv", "net present value"], explain:"NPV = Net Present Value. It discounts future cash flows to today's value and subtracts the initial investment: NPV = sum(CF_t / (1+r)^t).", tip:"Positive NPV means discounted benefits exceed discounted costs under the chosen discount rate."},
       {id:"charge-out", term:"Charge-out", zh:"成本分摊/内部计费", chapter:"Chapter 15 / 20", aliases:["charge-out", "charge out", "cost recovery", "full cost recovery"], explain:"A mechanism to allocate IT service costs to users, departments, or business units according to chosen drivers.", tip:"Good charge-out should be understandable, fair, predictable, verifiable, and consistent."},
-      {id:"change-types", term:"Change types", zh:"变更类型", chapter:"Chapter 16", aliases:["standard change", "normal change", "urgent change", "change request"], explain:"Standard changes are pre-approved and routine; normal changes need evaluation; urgent changes are expedited for time-critical needs.", tip:"Shared infrastructure impact often pushes a request toward normal change."},
+      {id:"change-types", term:"Change management / Change types", zh:"变更管理/变更类型", chapter:"Chapter 16", aliases:["change management", "standard change", "normal change", "urgent change", "change request"], explain:"Change management is the ITIL process that controls the lifecycle of changes to IT services. Standard changes are pre-approved and routine; normal changes need evaluation (e.g. by a change advisory board); urgent changes are expedited for time-critical needs.", tip:"Shared infrastructure impact often pushes a request toward normal change."},
       {id:"incident-problem", term:"Incident / Problem", zh:"事件/问题", chapter:"Chapter 16", aliases:["incident", "incidents", "problem handling", "event management", "problem management"], explain:"An event is a significant state change. An incident is an unwanted interruption or degradation. A problem is the underlying cause of one or more incidents.", tip:"Problem is about root cause, not just one user report."},
-      {id:"sla", term:"SLA / Service level", zh:"服务级别", chapter:"Chapter 17", aliases:["sla", "service level agreement", "service level agreements", "mtbf", "mttr"], explain:"SLA = Service Level Agreement. In this course, a service level is a quantitative minimum quality requirement for a service, usually with period p, percentage q, measured parameter, and threshold. MTBF = Mean Time Between Failures; MTTR = Mean Time To Repair.", tip:"Good SLA wording is measurable, precise, period-based, service-oriented, and minimum-quality based."},
+      {id:"service-desk", term:"Service desk / IT services manager", zh:"服务台 / IT 服务经理", chapter:"Chapter 14 / 16 / 19", aliases:["service desk", "service desks", "it services manager", "it service manager"], explain:"The service desk is the single point of contact for users: it logs and helps resolve incidents, answers information queries, and fulfils standard service requests/changes that are already in the service catalog. The IT services manager instead handles complex, non-catalog requests that need (extensive) procurement or development, usually run as a project.", tip:"Exam cue: 'standard, catalog-based, quick' -> service desk; 'complex, not in catalog, needs a project' -> IT services manager."},
+      {id:"sla", term:"SLA / Service level", zh:"服务级别", chapter:"Chapter 17", aliases:["sla", "service level", "service levels", "service level agreement", "service level agreements", "mtbf", "mttr"], explain:"SLA = Service Level Agreement. In this course, a service level is a quantitative minimum quality requirement for a service, usually with period p, percentage q, measured parameter, and threshold. MTBF = Mean Time Between Failures; MTTR = Mean Time To Repair.", tip:"Good SLA wording is measurable, precise, period-based, service-oriented, and minimum-quality based. Note: in Chapter 21's Strategic Alignment Model, \"Service level\" can also name one of the four alignment perspectives (focus on excellent IT service delivery) — a related but different sense from the SLA definition here."},
       {id:"supplier-classification", term:"Supplier classification", zh:"供应商分类", chapter:"Chapter 18", aliases:["strategic supplier", "tactical supplier", "operational supplier", "commodity supplier", "supplier classification"], explain:"Suppliers can be classified by importance and risk, from commodity suppliers to strategic partners.", tip:"Look at business impact, dependency, and substitutability."},
       {id:"cobit", term:"COBIT", zh:"COBIT 治理与管理框架", chapter:"Chapter 20", aliases:["cobit", "cobit goals cascade", "goals cascade", "cobit enabler", "cobit enablers"], explain:"COBIT = Control Objectives for Information and Related Technologies. It is a governance and management framework for enterprise IT. Its goals cascade translates stakeholder needs into enterprise goals, IT-related goals, and then enabler/process goals.", tip:"Exam cue: do not answer only 'governance framework'; mention the cascade: stakeholder needs -> enterprise goals -> IT goals -> processes/enablers."},
       {id:"iso-38500", term:"ISO/IEC 38500", zh:"IT 治理标准", chapter:"Chapter 20", aliases:["iso/iec 38500", "iso 38500", "evaluate direct monitor", "evaluate, direct, monitor"], explain:"ISO/IEC 38500 is the international standard for corporate governance of IT. Its three governance tasks are Evaluate, Direct, and Monitor: assess IT use, set direction, and monitor performance/conformance.", tip:"Do not confuse with ISO/IEC 20000, which concerns service management systems."},
@@ -5336,7 +5413,7 @@
       }
       state.quizIndex = Math.max(0, Math.min(state.quizIndex, list.length - 1));
       const item = list[state.quizIndex];
-      const isRetake = state.retake.quiz === item.id;
+      const isRetake = state.retake.quiz === item.id || ($("mode").value === "weak" && !sessionSeen.quiz.has(item.id));
       const record = isRetake ? null : state.quiz[item.id];
       const mapTarget = mapTargetFor(item);
       $("quizMeta").innerHTML = metaHtml("quiz", item, state.quizIndex, list.length);
@@ -5356,6 +5433,7 @@
         btn.textContent = `${String.fromCharCode(65 + displayIndex)}. ${item.o[realIndex]}`;
         btn.onclick = () => {
           if (state.retake.quiz === item.id) delete state.retake.quiz;
+          sessionSeen.quiz.add(item.id);
           state.quiz[item.id] = {choice: realIndex, correct: realIndex === item.a, wrong: realIndex !== item.a, ts: new Date().toISOString()};
           if ($("mode").value === "unseen") state.retain.quiz = item.id;
           save();
@@ -5400,7 +5478,7 @@
         $("clozeProgress").style.width = "0%";
         return;
       }
-      const isRetake = state.retake.cloze === item.id;
+      const isRetake = state.retake.cloze === item.id || ($("mode").value === "weak" && !sessionSeen.cloze.has(item.id));
       const record = isRetake ? null : state.cloze[item.id];
       $("clozeInput").disabled = false;
       $("clozeMeta").innerHTML = metaHtml("cloze", item, state.clozeIndex, list.length);
@@ -5424,6 +5502,7 @@
       const accepted = item.answers.map(normalizeAnswer);
       const correct = reveal ? false : accepted.includes(normalized);
       if (state.retake.cloze === item.id) delete state.retake.cloze;
+      sessionSeen.cloze.add(item.id);
       state.cloze[item.id] = {answer, correct, wrong: !correct, revealed: reveal, ts: new Date().toISOString()};
       if ($("mode").value === "unseen") state.retain.cloze = item.id;
       save();
@@ -5442,11 +5521,12 @@
       if (!item) {
         $("essayMeta").innerHTML = "";
         $("essayQuestion").textContent = "没有匹配的大题";
+        $("essayMaterial").hidden = true;
+        $("essayMaterial").innerHTML = "";
         $("essayAnswer").value = "";
         $("essayFeedback").hidden = true;
         $("essaySource").innerHTML = "";
         $("essayRubric").innerHTML = "";
-        $("essayScore").textContent = "未评分";
         $("essayProgress").style.width = "0%";
         return;
       }
@@ -5454,10 +5534,11 @@
       const record = isRetake ? {} : (state.essay[item.id] || {});
       $("essayMeta").innerHTML = metaHtml("essay", item, state.essayIndex, list.length);
       $("essayQuestion").innerHTML = annotatedText(item.q);
+      $("essayMaterial").hidden = !item.material;
+      $("essayMaterial").innerHTML = item.material || "";
       $("essayAnswer").value = record.answer || "";
       $("essaySource").innerHTML = `<strong>来源 / Source:</strong> ${sourceFor(item, "essay")}`;
       $("essayRubric").innerHTML = (item.rubric || []).map(point => `<div>• ${escapeHtml(point)}</div>`).join("");
-      $("essayScore").textContent = Number.isFinite(record.score) ? `${record.score}/10` : "未评分";
       $("essayFeedback").hidden = !record.feedback;
       $("essayFeedback").innerHTML = record.feedback ? formattedReviewHtml(record.feedback) : "";
       $("essayProgress").style.width = `${(state.essayIndex + 1) / list.length * 100}%`;
@@ -5471,6 +5552,7 @@
         "Return plain text only. Do not use Markdown headings, asterisks, or bullet symbols.",
         "",
         `Question: ${item.q}`,
+        item.material ? `\nCase material / table / figure description:\n${item.material.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}` : "",
         "",
         `Student answer: ${answer || "(blank)"}`,
         "",
@@ -5507,7 +5589,7 @@
       const {item} = currentEssay();
       if (!item) return;
       const answer = $("essayAnswer").value.trim();
-      const apiKey = $("essayApiKey").value.trim();
+      const apiKey = $("globalApiKey").value.trim();
       if (!answer) {
         $("essayStatus").textContent = "先写答案再评分。";
         return;
@@ -5522,7 +5604,7 @@
         return;
       }
       $("essayStatus").textContent = "正在评分...";
-      $("gradeEssay").disabled = true;
+      $("floatGradeEssay").disabled = true;
       try {
         const response = await fetch("https://api.openai.com/v1/responses", {
           method: "POST",
@@ -5530,7 +5612,7 @@
             "Content-Type": "application/json",
             "Authorization": `Bearer ${apiKey}`
           },
-          body: JSON.stringify(responseRequestBody($("essayModel").value, essayPrompt(item, answer), 0.1))
+          body: JSON.stringify(responseRequestBody($("globalModel").value, essayPrompt(item, answer), 0.1))
         });
         const json = await response.json();
         if (!response.ok) throw new Error(json.error?.message || `HTTP ${response.status}`);
@@ -5549,7 +5631,7 @@
         state.essay[item.id] = {...(state.essay[item.id] || {}), answer, feedback, score: null, ts: new Date().toISOString()};
         $("essayStatus").textContent = "评分失败，已显示参考答案。";
       } finally {
-        $("gradeEssay").disabled = false;
+        $("floatGradeEssay").disabled = false;
         save();
         renderEssay();
       }
@@ -6239,7 +6321,7 @@
     function syncApiKey(sourceId) {
       const source = $(sourceId);
       if (!source) return;
-      ["globalApiKey", "apiKey", "essayApiKey"].forEach(id => {
+      ["globalApiKey", "apiKey"].forEach(id => {
         const target = $(id);
         if (target && target !== source) target.value = source.value;
       });
@@ -6255,7 +6337,7 @@
     function syncAiModel(sourceId) {
       const source = $(sourceId);
       if (!source) return;
-      ["globalModel", "aiModel", "essayModel"].forEach(id => {
+      ["globalModel", "aiModel"].forEach(id => {
         const target = $(id);
         if (target && target !== source) target.value = source.value;
       });
@@ -6264,7 +6346,7 @@
 
     function clearSavedApiKey() {
       localStorage.removeItem(apiKeyStoreKey);
-      ["globalApiKey", "apiKey", "essayApiKey"].forEach(id => {
+      ["globalApiKey", "apiKey"].forEach(id => {
         const input = $(id);
         if (input) input.value = "";
       });
@@ -6362,10 +6444,8 @@
     $("apiClose").onclick = () => setApiDrawer(false);
     $("globalApiKey").oninput = () => syncApiKey("globalApiKey");
     $("apiKey").oninput = () => syncApiKey("apiKey");
-    $("essayApiKey").oninput = () => syncApiKey("essayApiKey");
     $("globalModel").onchange = () => syncAiModel("globalModel");
     $("aiModel").onchange = () => syncAiModel("aiModel");
-    $("essayModel").onchange = () => syncAiModel("essayModel");
     $("apiGoReview").onclick = () => openAiReview(false);
     $("apiRunReview").onclick = () => openAiReview(true);
     $("apiGoEssay").onclick = () => openEssayGrade(false);
@@ -6456,7 +6536,6 @@
     $("essayAnswer").oninput = () => {
       saveCurrentEssayDraft();
     };
-    $("gradeEssay").onclick = gradeEssay;
     $("floatGradeEssay").onclick = gradeEssay;
     $("showEssayModel").onclick = showEssayModel;
     $("prevEssay").onclick = () => {
