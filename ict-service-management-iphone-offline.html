@@ -702,6 +702,16 @@
       background: rgba(255, 255, 255, 0.96);
       box-shadow: var(--shadow);
       backdrop-filter: blur(10px);
+      display: grid;
+      grid-template-columns: 44px minmax(150px, 1fr) minmax(120px, 0.8fr) minmax(140px, 0.9fr);
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .essay-float-nav button {
+      min-width: 0;
+      white-space: normal;
+      line-height: 1.2;
     }
 
     .ai-status {
@@ -1108,17 +1118,30 @@
       .essay-layout { grid-template-columns: 1fr; }
       .essay-answer { min-height: 150px; }
       #essayView {
-        padding-bottom: 76px;
+        padding-bottom: 150px;
       }
       .essay-float-nav {
         bottom: calc(8px + env(safe-area-inset-bottom));
         margin-left: -4px;
         margin-right: -4px;
         display: grid;
-        grid-template-columns: 44px 1fr 1fr 1fr;
+        grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr);
+        gap: 8px;
       }
       .essay-float-nav #prevEssay {
         width: 44px;
+      }
+      .essay-float-nav #showEssayModel,
+      .essay-float-nav #floatGradeEssay {
+        min-height: 44px;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+      .essay-float-nav #nextEssay {
+        grid-column: 1 / -1;
+        min-height: 52px;
+        font-size: 16px;
+        font-weight: 900;
       }
       .quiz {
         padding: 14px;
@@ -1159,6 +1182,9 @@
         height: 50px;
         min-height: 50px;
       }
+      body[data-view="essay"] .api-fab {
+        bottom: calc(150px + env(safe-area-inset-bottom));
+      }
       .api-drawer {
         right: 10px;
         left: 10px;
@@ -1166,6 +1192,9 @@
         width: auto;
         padding: 12px;
         border-radius: 12px;
+      }
+      body[data-view="essay"] .api-drawer {
+        bottom: calc(210px + env(safe-area-inset-bottom));
       }
       .api-drawer-actions {
         grid-template-columns: 1fr;
@@ -4864,7 +4893,7 @@
     state.search ||= "";
     state.retain ||= {};
     state.retake ||= {};
-    const sessionSeen = {quiz: new Set(), cloze: new Set()};
+    const sessionSeen = {quiz: new Set(), cloze: new Set(), essay: new Set()};
 
     const $ = (id) => document.getElementById(id);
     $("mode").value = state.mode;
@@ -4961,8 +4990,32 @@
       {id:"acme", term:"ACME", zh:"通用练习公司名", chapter:"Chapter 13 calculation case", aliases:["acme"], explain:"A placeholder company name used in calculation-style exercises, especially capacity and cost timing examples.", tip:"Exam cue: focus on the numbers and scaling rule, not the company identity."}
     ];
     const glossaryById = Object.fromEntries(glossary.map(item => [item.id, item]));
+    const safeGlossaryAliases = new Set([
+      "itil", "information technology infrastructure library", "iso/iec 20000", "iso 20000",
+      "it4it", "it4it value chain", "cmmi-svc", "cmmi svc", "capability maturity model integration for services",
+      "cra", "cyber resilience act", "samm", "owasp samm", "software assurance maturity model",
+      "it governance", "it management", "iaas", "paas", "saas", "infrastructure as a service",
+      "platform as a service", "software as a service", "grosch", "grosch's law", "groschs law",
+      "moore's law", "moores law", "gordon moore", "npv", "net present value", "charge-out",
+      "charge out", "sla", "service level agreement", "service level agreements", "mtbf", "mttr",
+      "cobit", "cobit goals cascade", "iso/iec 38500", "iso 38500", "evaluate direct monitor",
+      "strategic impact grid", "support mode", "factory mode", "turnaround mode", "strategic mode",
+      "nolan and mcfarlan", "nolan & mcfarlan", "strategic alignment model", "sam", "sam model",
+      "strategy execution perspective", "technology transformation perspective", "competitive potential perspective",
+      "service level perspective", "henderson and venkatraman", "henderson & venkatraman",
+      "weill and broadbent", "weill & broadbent", "weill and ross", "weill & ross", "luftman",
+      "luftman model", "operating model", "diversification operating model", "replication operating model",
+      "coordination operating model", "unification operating model", "ross et al", "ross et al.",
+      "michael porter", "porter value chain", "supply chain", "scor", "kbc", "kbc group",
+      "bol.com", "barry callebaut", "fod finance", "fps finances", "fps finance",
+      "federal public service finance", "tax-on-web", "myminfin", "lidl", "philips", "ibm",
+      "mainframe", "cisco", "microsoft", "sap", "erp", "ku leuven", "belgapump", "probranif", "acme"
+    ]);
     const aliasToGlossaryId = {};
-    glossary.forEach(item => item.aliases.forEach(alias => aliasToGlossaryId[alias.toLowerCase()] = item.id));
+    glossary.forEach(item => item.aliases.forEach(alias => {
+      const key = alias.toLowerCase();
+      if (safeGlossaryAliases.has(key)) aliasToGlossaryId[key] = item.id;
+    }));
     const glossaryAliases = Object.keys(aliasToGlossaryId).sort((a, b) => b.length - a.length);
     const glossaryPattern = new RegExp(`(^|[^A-Za-z0-9])(${glossaryAliases.map(escapeRegExp).join("|")})(?=$|[^A-Za-z0-9])`, "gi");
     function escapeRegExp(value) {
@@ -5133,7 +5186,7 @@
         const retainId = state.retain?.[type];
         out = out.filter(item => {
           if (item.id === retainId) return true;
-          return type === "card" ? !state.known[item.id] && !state.weak[item.id] : !state[type]?.[item.id];
+          return !hasMeaningfulRecord(type, item);
         });
       }
       if (state.shuffleSeed) {
@@ -5151,8 +5204,33 @@
       state.showAnswer = false;
     }
 
+    function submittedEssayRecord(record) {
+      return Boolean(record && (record.feedback || Number.isFinite(record.score) || record.correct || record.wrong));
+    }
+
+    function hasMeaningfulRecord(type, item) {
+      if (type === "card") return Boolean(state.known[item.id] || state.weak[item.id]);
+      const record = state[type]?.[item.id];
+      if (!record) return false;
+      if (type === "essay") return submittedEssayRecord(record);
+      return true;
+    }
+
+    function attemptsFor(type, item) {
+      const record = state[type]?.[item.id];
+      if (!record) return 0;
+      if (type === "essay" && !submittedEssayRecord(record)) return 0;
+      return Number(record.attempts || 1);
+    }
+
+    function attemptPill(type, item) {
+      const attempts = attemptsFor(type, item);
+      if (!attempts) return "";
+      return `<span class="pill">已做 ${attempts} 遍</span>`;
+    }
+
     function firstUnansweredIndex(list, type) {
-      const index = list.findIndex(item => !state[type]?.[item.id]);
+      const index = list.findIndex(item => !hasMeaningfulRecord(type, item));
       return index === -1 ? 0 : index;
     }
 
@@ -5168,8 +5246,8 @@
         if (state.known[item.id]) return {label: "已掌握 / Done", cls: "done", side: "done"};
         return {label: "未做 / New", cls: "new", side: "new"};
       }
+      if (!hasMeaningfulRecord(type, item)) return {label: "未做 / New", cls: "new", side: "new"};
       const record = state[type]?.[item.id];
-      if (!record) return {label: "未做 / New", cls: "new", side: "new"};
       if (record.correct) return {label: "已做正确 / Done", cls: "done", side: "done"};
       return {label: "已做需复习 / Review", cls: "review", side: "review"};
     }
@@ -5414,9 +5492,10 @@
       state.quizIndex = Math.max(0, Math.min(state.quizIndex, list.length - 1));
       const item = list[state.quizIndex];
       const isRetake = state.retake.quiz === item.id || ($("mode").value === "weak" && !sessionSeen.quiz.has(item.id));
-      const record = isRetake ? null : state.quiz[item.id];
+      const storedRecord = state.quiz[item.id];
+      const record = (!isRetake && sessionSeen.quiz.has(item.id)) ? storedRecord : null;
       const mapTarget = mapTargetFor(item);
-      $("quizMeta").innerHTML = metaHtml("quiz", item, state.quizIndex, list.length);
+      $("quizMeta").innerHTML = `${metaHtml("quiz", item, state.quizIndex, list.length)}${attemptPill("quiz", item)}`;
       $("quizQuestion").innerHTML = annotatedText(item.q);
       $("quizMap").textContent = `知识地图 / Map · Ch ${mapTarget.chapter}`;
       $("quizMap").title = mapTarget.branches.length ? `跳到 Chapter ${mapTarget.chapter}: ${mapTarget.branches.join(", ")}` : `跳到 Chapter ${mapTarget.chapter}`;
@@ -5434,7 +5513,9 @@
         btn.onclick = () => {
           if (state.retake.quiz === item.id) delete state.retake.quiz;
           sessionSeen.quiz.add(item.id);
-          state.quiz[item.id] = {choice: realIndex, correct: realIndex === item.a, wrong: realIndex !== item.a, ts: new Date().toISOString()};
+          const previous = state.quiz[item.id] || {};
+          const attempts = Number(previous.attempts || (previous.choice !== undefined ? 1 : 0)) + 1;
+          state.quiz[item.id] = {choice: realIndex, correct: realIndex === item.a, wrong: realIndex !== item.a, attempts, ts: new Date().toISOString()};
           if ($("mode").value === "unseen") state.retain.quiz = item.id;
           save();
           render();
@@ -5531,8 +5612,10 @@
         return;
       }
       const isRetake = state.retake.essay === item.id;
-      const record = isRetake ? {} : (state.essay[item.id] || {});
-      $("essayMeta").innerHTML = metaHtml("essay", item, state.essayIndex, list.length);
+      const storedRecord = state.essay[item.id] || {};
+      const showStoredAnswer = !isRetake && (submittedEssayRecord(storedRecord) || sessionSeen.essay.has(item.id));
+      const record = showStoredAnswer ? storedRecord : {};
+      $("essayMeta").innerHTML = `${metaHtml("essay", item, state.essayIndex, list.length)}${attemptPill("essay", item)}`;
       $("essayQuestion").innerHTML = annotatedText(item.q);
       $("essayMaterial").hidden = !item.material;
       $("essayMaterial").innerHTML = item.material || "";
@@ -5597,7 +5680,10 @@
       if (!apiKey) {
         const feedback = `未填写 API key，无法自动评分。\n\n参考答案：${item.a}\n\n评分要点：${(item.rubric || []).join("；")}`;
         if (state.retake.essay === item.id) delete state.retake.essay;
-        state.essay[item.id] = {...(state.essay[item.id] || {}), answer, feedback, score: null, ts: new Date().toISOString()};
+        sessionSeen.essay.add(item.id);
+        const previous = state.essay[item.id] || {};
+        const attempts = Number(previous.attempts || (submittedEssayRecord(previous) ? 1 : 0)) + 1;
+        state.essay[item.id] = {...previous, answer, feedback, score: null, correct: false, wrong: true, attempts, draft: false, ts: new Date().toISOString()};
         $("essayStatus").textContent = "未填写 API key，已显示参考评分要点。";
         save();
         renderEssay();
@@ -5623,12 +5709,18 @@
           .trim();
         const score = parseScore(feedback);
         if (state.retake.essay === item.id) delete state.retake.essay;
-        state.essay[item.id] = {answer, feedback, score, correct: score !== null ? score >= 7 : false, wrong: score !== null ? score < 7 : false, ts: new Date().toISOString()};
+        sessionSeen.essay.add(item.id);
+        const previous = state.essay[item.id] || {};
+        const attempts = Number(previous.attempts || (submittedEssayRecord(previous) ? 1 : 0)) + 1;
+        state.essay[item.id] = {answer, feedback, score, correct: score !== null ? score >= 7 : false, wrong: score !== null ? score < 7 : false, attempts, draft: false, ts: new Date().toISOString()};
         $("essayStatus").textContent = "评分完成。";
       } catch (error) {
         const feedback = `GPT 评分失败：${error.message}\n\n参考答案：${item.a}\n\n评分要点：${(item.rubric || []).join("；")}`;
         if (state.retake.essay === item.id) delete state.retake.essay;
-        state.essay[item.id] = {...(state.essay[item.id] || {}), answer, feedback, score: null, ts: new Date().toISOString()};
+        sessionSeen.essay.add(item.id);
+        const previous = state.essay[item.id] || {};
+        const attempts = Number(previous.attempts || (submittedEssayRecord(previous) ? 1 : 0)) + 1;
+        state.essay[item.id] = {...previous, answer, feedback, score: null, correct: false, wrong: true, attempts, draft: false, ts: new Date().toISOString()};
         $("essayStatus").textContent = "评分失败，已显示参考答案。";
       } finally {
         $("floatGradeEssay").disabled = false;
@@ -5642,11 +5734,16 @@
       if (!item) return;
       const answer = $("essayAnswer").value.trim();
       if (state.retake.essay === item.id) delete state.retake.essay;
+      sessionSeen.essay.add(item.id);
+      const previous = state.essay[item.id] || {};
+      const attempts = Number(previous.attempts || (submittedEssayRecord(previous) ? 1 : 0)) + 1;
       state.essay[item.id] = {
-        ...(state.essay[item.id] || {}),
+        ...previous,
         answer,
         feedback: `参考答案：${item.a}\n\n评分要点：${(item.rubric || []).join("；")}`,
-        score: state.essay[item.id]?.score ?? null,
+        score: previous.score ?? null,
+        attempts,
+        draft: false,
         ts: new Date().toISOString()
       };
       save();
@@ -6285,6 +6382,7 @@
     }
 
     function renderView() {
+      document.body.dataset.view = state.view;
       document.querySelectorAll(".tabs button").forEach(btn => {
         btn.classList.toggle("active", btn.dataset.view === state.view);
       });
@@ -6376,7 +6474,8 @@
     function saveCurrentEssayDraft() {
       const {item} = currentEssay();
       if (!item) return;
-      state.essay[item.id] = {...(state.essay[item.id] || {}), answer: $("essayAnswer").value, ts: new Date().toISOString()};
+      sessionSeen.essay.add(item.id);
+      state.essay[item.id] = {...(state.essay[item.id] || {}), answer: $("essayAnswer").value, draft: true, ts: new Date().toISOString()};
       save();
     }
 
