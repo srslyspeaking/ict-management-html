@@ -663,7 +663,8 @@
     }
 
     .essay-layout > .ai-box h3 + .essay-rubric,
-    .essay-layout > .ai-box h3 + .essay-ai-feedback {
+    .essay-layout > .ai-box h3 + .essay-model-answer,
+    .essay-layout > .ai-box h3 + .essay-memory-tips {
       margin-bottom: 14px;
     }
 
@@ -701,16 +702,20 @@
     }
 
     .essay-ai-feedback {
-      max-height: 48vh;
-      overflow: auto;
+      grid-column: 1 / -1;
       margin: 0;
     }
 
     .essay-model-answer {
-      grid-column: 1 / -1;
-      margin-top: 2px;
+      margin: 0 0 14px;
       background: #fbfcfb;
       border-color: #cbd8d9;
+    }
+
+    .essay-memory-tips {
+      background: #fffaf0;
+      border-color: #e6d2a6;
+      margin: 0;
     }
 
     .case-material {
@@ -1524,11 +1529,13 @@
             <div class="ai-box">
               <h3>答题提示 / Quick cues</h3>
               <div id="essayRubric" class="essay-rubric"></div>
-              <h3>AI 评分复盘 / AI feedback</h3>
-              <div id="essayFeedback" class="explain essay-ai-feedback" hidden></div>
+              <h3>参考答案 / Reference</h3>
+              <div id="essayModelAnswer" class="explain essay-model-answer" hidden></div>
+              <h3>助记 / Memorization</h3>
+              <div id="essayMemoryTips" class="explain essay-memory-tips"></div>
               <div id="essayStatus" class="ai-status">大题来自书、练习、Stuvia review 和 case 题；适合练英文考试表达。</div>
             </div>
-            <div id="essayModelAnswer" class="explain essay-model-answer" hidden></div>
+            <div id="essayFeedback" class="explain essay-ai-feedback" hidden></div>
           </div>
         </article>
       </section>
@@ -6063,8 +6070,31 @@
         model = String(record.feedback).replace(/^参考答案[:：]\s*/i, "").split(/\n\s*评分要点[:：]/)[0].trim();
       }
       if (!model) return "";
-      const rubrics = answerCueCandidates(item).map(point => `Cue: ${point}`).join("\n");
-      return formattedReviewHtml(`参考答案 / Reference answer\n${model}${rubrics ? `\n\n答题提示 / Quick cues\n${rubrics}` : ""}`);
+      return formattedReviewHtml(`参考答案 / Reference answer\n${model}`);
+    }
+
+    function extractMemorySection(feedback) {
+      const text = String(feedback || "");
+      const match = text.match(/Example answer memorization tips[:：]?([\s\S]*)/i);
+      if (!match) return "";
+      return match[1].trim();
+    }
+
+    function memoryTipsHtml(item, record) {
+      const aiTips = extractMemorySection(record?.feedback);
+      if (aiTips) return formattedReviewHtml(`AI 助记 / AI memorization tips\n${aiTips}`);
+      const cues = answerCueCandidates(item);
+      const terms = extractAnswerTerms(`${item.q || ""} ${item.a || ""}`).slice(0, 5);
+      const structure = cues.slice(0, 3).map((cue, index) => `${index + 1}. ${cue}`).join("\n");
+      const skeleton = terms.length
+        ? `In this question, first define ${terms[0]}, then explain ${terms[1] || "the key distinction"}, and finally apply it to the case/result.`
+        : "First define the concept, then give the distinction or steps, and finally apply it to the case.";
+      return formattedReviewHtml([
+        "助记 / Memorization",
+        terms.length ? `Trigger words: ${terms.join(" / ")}` : "Trigger words: read the model/category named in the question.",
+        structure ? `Structure:\n${structure}` : "",
+        `Reusable sentence: ${skeleton}`
+      ].filter(Boolean).join("\n\n"));
     }
 
     function renderEssay() {
@@ -6078,6 +6108,7 @@
         $("essayFeedback").hidden = true;
         $("essayModelAnswer").hidden = true;
         $("essayModelAnswer").innerHTML = "";
+        $("essayMemoryTips").innerHTML = "";
         $("essaySource").innerHTML = "";
         $("essayRubric").innerHTML = "";
         $("essayProgress").style.width = "0%";
@@ -6096,10 +6127,11 @@
       $("essayRubric").innerHTML = essayCueHtml(item);
       const aiFeedback = record.feedback && !/^参考答案[:：]/.test(record.feedback) ? record.feedback : "";
       $("essayFeedback").hidden = !aiFeedback;
-      $("essayFeedback").innerHTML = aiFeedback ? formattedReviewHtml(aiFeedback) : "";
+      $("essayFeedback").innerHTML = aiFeedback ? formattedReviewHtml(`AI 评分复盘 / AI feedback\n\n${aiFeedback}`) : "";
       const modelHtml = referenceFeedbackHtml(item, record);
       $("essayModelAnswer").hidden = !modelHtml;
       $("essayModelAnswer").innerHTML = modelHtml;
+      $("essayMemoryTips").innerHTML = memoryTipsHtml(item, record);
       $("essayProgress").style.width = `${(state.essayIndex + 1) / list.length * 100}%`;
     }
 
