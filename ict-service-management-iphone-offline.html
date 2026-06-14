@@ -6072,13 +6072,109 @@
       return formattedReviewHtml(`参考答案 / Reference answer\n${model}\n\n中文版理解 / Chinese version\n${chineseStudyVersion(item)}`);
     }
 
+    const chinesePhraseMap = [
+      ["Strategy for IT services provision", "IT 服务供给战略"],
+      ["processes of the service strategy phase", "服务战略阶段的流程"],
+      ["service strategy phase", "服务战略阶段"],
+      ["What is described", "描述的内容"],
+      ["best strategy to follow", "应采用的最佳战略"],
+      ["determine the best strategy", "确定最佳战略"],
+      ["delivering our services", "交付服务"],
+      ["General services strategy", "总体服务战略"],
+      ["How to deliver added value", "如何交付附加价值"],
+      ["added value", "附加价值"],
+      ["Create service offering", "创建服务供给"],
+      ["Organize IT department", "组织 IT 部门"],
+      ["Economics of IT services", "IT 服务经济性"],
+      ["Services portfolio management", "服务组合管理"],
+      ["service portfolio management", "服务组合管理"],
+      ["Financial management", "财务管理"],
+      ["Demand management", "需求管理"],
+      ["Business relationship management", "业务关系管理"],
+      ["business relationship management", "业务关系管理"],
+      ["IT services provision", "IT 服务供给"],
+      ["IT services", "IT 服务"],
+      ["ITIL", "ITIL（IT 服务管理最佳实践框架）"],
+      ["ISO/IEC 20000", "ISO/IEC 20000（IT 服务管理体系标准）"],
+      ["IT4IT", "IT4IT（IT 价值链参考架构）"],
+      ["CMMI-SVC", "CMMI-SVC（服务能力成熟度模型）"],
+      ["COBIT", "COBIT（企业 IT 治理与管理框架）"],
+      ["NPV", "NPV（净现值）"],
+      ["IRR", "IRR（内部收益率）"],
+      ["SLA", "SLA（服务级别协议）"],
+      ["service unit", "服务计量单位"],
+      ["service catalog", "服务目录"],
+      ["charge-out", "内部计费/成本分摊"],
+      ["full cost recovery", "全成本回收"],
+      ["availability", "可用性"],
+      ["scalability", "可扩展性"],
+      ["usability", "可用性/易用性"],
+      ["maintainability", "可维护性"],
+      ["user-friendliness", "用户友好性"],
+      ["administrator-friendliness", "管理员友好性"],
+      ["incident", "事件/服务中断"],
+      ["problem", "问题/根因"],
+      ["event", "事件状态变化"],
+      ["standard change", "标准变更"],
+      ["normal change", "普通变更"],
+      ["urgent change", "紧急变更"],
+      ["supplier classification", "供应商分类"],
+      ["commodity supplier", "商品型供应商"],
+      ["tactical supplier", "战术型供应商"],
+      ["strategic supplier", "战略型供应商"],
+      ["Strategic Impact Grid", "战略影响网格"],
+      ["Strategic Alignment Model", "战略一致性模型"],
+      ["operating model", "运营模型"],
+      ["financial focus", "财务重点"],
+      ["operational focus", "运营重点"],
+      ["product focus", "产品重点"],
+      ["customer focus", "客户重点"],
+      ["processes", "流程"],
+      ["Processes", "流程"]
+    ];
+
+    function translateCoursePhrase(text) {
+      let out = String(text || "");
+      chinesePhraseMap.forEach(([en, zh]) => {
+        out = out.replace(new RegExp(escapeRegExp(en), "gi"), zh);
+      });
+      out = out
+        .replace(/\bKey terms?:/gi, "关键词：")
+        .replace(/\bFormula or logic:/gi, "公式/逻辑：")
+        .replace(/\bThis means\b/gi, "这意味着")
+        .replace(/\bmeans\b/gi, "指的是")
+        .replace(/\binclude[s]?\b/gi, "包括")
+        .replace(/\bcompare\b/gi, "比较")
+        .replace(/\bdistinguish\b/gi, "区分")
+        .replace(/\bexplain\b/gi, "解释")
+        .replace(/\bdefine\b/gi, "定义")
+        .replace(/\bwhy\b/gi, "为什么")
+        .replace(/\bhow\b/gi, "如何")
+        .replace(/\bwhat\b/gi, "什么")
+        .replace(/\band\b/gi, "和")
+        .replace(/\bor\b/gi, "或")
+        .replace(/\bthe\b/gi, "")
+        .replace(/\s+/g, " ")
+        .replace(/\s+([，。；：])/g, "$1")
+        .trim();
+      return out;
+    }
+
+    function translatedCueList(item) {
+      return answerCueCandidates(item)
+        .map(translateCoursePhrase)
+        .filter(Boolean)
+        .filter((line, index, arr) => arr.findIndex(x => norm(x) === norm(line)) === index)
+        .slice(0, 4);
+    }
+
     function chineseStudyVersion(item) {
-      const cues = answerCueCandidates(item);
       const terms = extractAnswerTerms(`${item.q || ""} ${item.a || ""}`).slice(0, 6);
-      const answerIdeas = splitAnswerIdeas(item.a || "").slice(0, 3);
+      const translatedCues = translatedCueList(item);
+      const answerIdeas = splitAnswerIdeas(item.a || "").slice(0, 3).map(translateCoursePhrase);
       const lines = [];
-      if (terms.length) lines.push(`这题先抓关键词：${terms.join("、")}。`);
-      if (cues.length) lines.push(`答题顺序可以按：${cues.slice(0, 3).join("；")}。`);
+      if (terms.length) lines.push(`这题先抓关键词：${terms.map(translateCoursePhrase).join("、")}。`);
+      if (translatedCues.length) lines.push(`答题顺序可以按：${translatedCues.slice(0, 3).join("；")}。`);
       if (answerIdeas.length) lines.push(`中文意思是：${answerIdeas.join("；")}。`);
       lines.push("考试时英文作答，中文只用来帮你理解和背结构。");
       return lines.join("\n");
