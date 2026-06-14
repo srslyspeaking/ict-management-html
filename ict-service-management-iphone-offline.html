@@ -80,6 +80,10 @@
       grid-template-columns: 286px 1fr;
     }
 
+    body.sidebar-collapsed .shell {
+      grid-template-columns: 64px 1fr;
+    }
+
     aside {
       border-right: 1px solid var(--line);
       background: #fbfbf7;
@@ -90,16 +94,55 @@
       overflow: auto;
     }
 
+    body.sidebar-collapsed aside {
+      padding: 14px 10px;
+      overflow: hidden;
+    }
+
     main {
       padding: 28px;
       max-width: 1180px;
       width: 100%;
     }
 
+    body.sidebar-collapsed main {
+      max-width: none;
+    }
+
     .brand {
       display: grid;
       gap: 4px;
       margin-bottom: 22px;
+    }
+
+    .sidebar-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 38px;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .sidebar-toggle {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+    }
+
+    body.sidebar-collapsed .brand,
+    body.sidebar-collapsed .field,
+    body.sidebar-collapsed aside > .row,
+    body.sidebar-collapsed .sync-panel {
+      display: none;
+    }
+
+    body.sidebar-collapsed .sidebar-top {
+      display: block;
+    }
+
+    body.sidebar-collapsed .sidebar-toggle {
+      width: 42px;
+      min-height: 42px;
+      padding: 0;
     }
     .brand h1 {
       font-size: 22px;
@@ -622,9 +665,23 @@
 
     .essay-rubric {
       display: grid;
-      gap: 8px;
-      color: var(--muted);
-      font-size: 14px;
+      gap: 7px;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .essay-rubric div {
+      border-left: 3px solid #cbd8d9;
+      padding: 6px 8px;
+      background: #f7faf9;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .essay-rubric .cue-label {
+      color: var(--brand);
+      font-weight: 800;
+      margin-right: 4px;
     }
 
     .case-material {
@@ -1060,6 +1117,9 @@
         flex-direction: column;
         min-height: 100vh;
       }
+      body.sidebar-collapsed .shell {
+        display: flex;
+      }
       aside {
         order: 3;
         position: static;
@@ -1069,6 +1129,25 @@
         border-bottom: 0;
         padding: 12px;
         background: #fbfbf7;
+      }
+      body.sidebar-collapsed aside {
+        padding: 12px;
+        overflow: auto;
+      }
+      .sidebar-toggle {
+        display: none;
+      }
+      .sidebar-top,
+      body.sidebar-collapsed .sidebar-top {
+        display: block;
+      }
+      body.sidebar-collapsed .brand,
+      body.sidebar-collapsed .field,
+      body.sidebar-collapsed .sync-panel {
+        display: grid;
+      }
+      body.sidebar-collapsed aside > .row {
+        display: flex;
       }
       .brand { margin-bottom: 10px; }
       .brand h1 { font-size: 18px; }
@@ -1272,9 +1351,12 @@
 <body>
   <div class="shell">
     <aside>
-      <div class="brand">
-        <h1>ICT Service Management</h1>
-        <p>iPhone offline · starts with MCQ</p>
+      <div class="sidebar-top">
+        <div class="brand">
+          <h1>ICT Service Management</h1>
+          <p>iPhone offline · starts with MCQ</p>
+        </div>
+        <button id="sidebarToggle" class="sidebar-toggle icon" type="button" title="折叠侧栏" aria-label="折叠侧栏">‹</button>
       </div>
 
       <div class="field">
@@ -1404,7 +1486,7 @@
               </div>
             </div>
             <div class="ai-box">
-              <h3>评分要点 / Rubric</h3>
+              <h3>答题提示 / Quick cues</h3>
               <div id="essayRubric" class="essay-rubric"></div>
               <div id="essayStatus" class="ai-status">大题来自书、练习、Stuvia review 和 case 题；适合练英文考试表达。</div>
             </div>
@@ -4950,6 +5032,7 @@
     state.search ||= "";
     state.retain ||= {};
     state.retake ||= {};
+    state.sidebarCollapsed ||= false;
     const sessionSeen = {quiz: new Set(), cloze: new Set(), essay: new Set()};
 
     const $ = (id) => document.getElementById(id);
@@ -5822,6 +5905,35 @@
       return {list, item: list[state.essayIndex]};
     }
 
+    function cueFromRubric(point) {
+      const text = String(point || "").trim()
+        .replace(/\.$/, "")
+        .replace(/^Defines?\s+/i, "")
+        .replace(/^Explains?\s+/i, "")
+        .replace(/^Mentions?\s+/i, "")
+        .replace(/^Lists?\s+/i, "")
+        .replace(/^Names?\s+/i, "")
+        .replace(/^Gives?\s+/i, "")
+        .replace(/^Uses?\s+/i, "")
+        .replace(/^Includes?\s+/i, "")
+        .replace(/^Correctly\s+/i, "")
+        .replace(/^Handles?\s+/i, "")
+        .replace(/^Applies?\s+/i, "")
+        .replace(/^Recognizes?\s+/i, "")
+        .replace(/^Computes?\s+/i, "")
+        .replace(/^Distinguishes?\s+/i, "contrast ")
+        .replace(/^Connects?\s+/i, "connect ");
+      return text.length > 72 ? `${text.slice(0, 69).trim()}...` : text;
+    }
+
+    function essayCueHtml(item) {
+      const points = (item.rubric || []).slice(0, 5);
+      if (!points.length) return `<div><span class="cue-label">Cue</span>Use definitions, contrast, example, and conclusion.</div>`;
+      return points.map((point, index) => (
+        `<div><span class="cue-label">Cue ${index + 1}</span>${escapeHtml(cueFromRubric(point))}</div>`
+      )).join("");
+    }
+
     function renderEssay() {
       const {list, item} = currentEssay();
       if (!item) {
@@ -5846,7 +5958,7 @@
       $("essayMaterial").innerHTML = item.material || "";
       $("essayAnswer").value = record.answer || "";
       $("essaySource").innerHTML = `<strong>来源 / Source:</strong> ${sourceFor(item, "essay")}`;
-      $("essayRubric").innerHTML = (item.rubric || []).map(point => `<div>• ${escapeHtml(point)}</div>`).join("");
+      $("essayRubric").innerHTML = essayCueHtml(item);
       $("essayFeedback").hidden = !record.feedback;
       $("essayFeedback").innerHTML = record.feedback ? formattedReviewHtml(record.feedback) : "";
       $("essayProgress").style.width = `${(state.essayIndex + 1) / list.length * 100}%`;
@@ -6608,6 +6720,10 @@
 
     function renderView() {
       document.body.dataset.view = state.view;
+      document.body.classList.toggle("sidebar-collapsed", Boolean(state.sidebarCollapsed));
+      $("sidebarToggle").textContent = state.sidebarCollapsed ? "›" : "‹";
+      $("sidebarToggle").title = state.sidebarCollapsed ? "展开侧栏" : "折叠侧栏";
+      $("sidebarToggle").setAttribute("aria-label", state.sidebarCollapsed ? "展开侧栏" : "折叠侧栏");
       document.querySelectorAll(".tabs button").forEach(btn => {
         btn.classList.toggle("active", btn.dataset.view === state.view);
       });
@@ -6942,6 +7058,11 @@
     };
     $("copySyncCode").onclick = copySyncCode;
     $("applySyncCode").onclick = applySyncCode;
+    $("sidebarToggle").onclick = () => {
+      state.sidebarCollapsed = !state.sidebarCollapsed;
+      save();
+      renderView();
+    };
     $("reset").onclick = () => {
       if (!confirm("确定清空本地复习进度吗？题库不会删除。")) return;
       localStorage.removeItem(storeKey);
