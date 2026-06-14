@@ -6285,20 +6285,51 @@
       return body;
     }
 
+    function essayGradeCacheKey(item, answer, model) {
+      return stableHash(`${item.id}|${model}|${answer.trim()}`);
+    }
+
+    function hasCachedEssayGrade(record, cacheKey) {
+      return Boolean(record?.feedback && record?.gradeCacheKey === cacheKey && !/^参考答案[:：]/.test(record.feedback));
+    }
+
+    function canUpgradeLegacyEssayGrade(record, answer) {
+      return Boolean(record?.feedback && !record.gradeCacheKey && record.answer === answer && !/^参考答案[:：]/.test(record.feedback));
+    }
+
     async function gradeEssay() {
       const {item} = currentEssay();
       if (!item) return;
       const answer = $("essayAnswer").value.trim();
       const apiKey = $("globalApiKey").value.trim();
+      const model = $("globalModel").value;
+      const cacheKey = essayGradeCacheKey(item, answer, model);
+      const previous = state.essay[item.id] || {};
       if (!answer) {
         $("essayStatus").textContent = "先写答案再评分。";
+        return;
+      }
+      if (hasCachedEssayGrade(previous, cacheKey)) {
+        sessionSeen.essay.add(item.id);
+        if (state.retake.essay === item.id) delete state.retake.essay;
+        $("essayStatus").textContent = "答案没有变化，已复用上次 AI 评分，未重新消耗 tokens。";
+        save();
+        renderEssay();
+        return;
+      }
+      if (canUpgradeLegacyEssayGrade(previous, answer)) {
+        sessionSeen.essay.add(item.id);
+        if (state.retake.essay === item.id) delete state.retake.essay;
+        state.essay[item.id] = {...previous, gradeCacheKey: cacheKey, gradeModel: model, ts: new Date().toISOString()};
+        $("essayStatus").textContent = "答案没有变化，已复用旧版 AI 评分，并已建立缓存。";
+        save();
+        renderEssay();
         return;
       }
       if (!apiKey) {
         const feedback = `未填写 API key，无法自动评分。\n\n你可以先看右侧参考答案和中文版理解，并按右侧 Quick cues 自测是否覆盖关键点。`;
         if (state.retake.essay === item.id) delete state.retake.essay;
         sessionSeen.essay.add(item.id);
-        const previous = state.essay[item.id] || {};
         const attempts = Number(previous.attempts || (submittedEssayRecord(previous) ? 1 : 0)) + 1;
         state.essay[item.id] = {...previous, answer, feedback, modelAnswer: item.a, modelRubric: item.rubric || [], score: null, correct: false, wrong: true, attempts, draft: false, ts: new Date().toISOString()};
         $("essayStatus").textContent = "未填写 API key，已显示参考评分要点。";
@@ -6315,7 +6346,7 @@
             "Content-Type": "application/json",
             "Authorization": `Bearer ${apiKey}`
           },
-          body: JSON.stringify(responseRequestBody($("globalModel").value, essayPrompt(item, answer), 0.1))
+          body: JSON.stringify(responseRequestBody(model, essayPrompt(item, answer), 0.1))
         });
         const json = await response.json();
         if (!response.ok) throw new Error(json.error?.message || `HTTP ${response.status}`);
@@ -6327,15 +6358,13 @@
         const score = parseScore(feedback);
         if (state.retake.essay === item.id) delete state.retake.essay;
         sessionSeen.essay.add(item.id);
-        const previous = state.essay[item.id] || {};
         const attempts = Number(previous.attempts || (submittedEssayRecord(previous) ? 1 : 0)) + 1;
-        state.essay[item.id] = {answer, feedback, score, correct: score !== null ? score >= 7 : false, wrong: score !== null ? score < 7 : false, attempts, draft: false, ts: new Date().toISOString()};
+        state.essay[item.id] = {answer, feedback, score, correct: score !== null ? score >= 7 : false, wrong: score !== null ? score < 7 : false, attempts, draft: false, gradeCacheKey: cacheKey, gradeModel: model, ts: new Date().toISOString()};
         $("essayStatus").textContent = "评分完成。";
       } catch (error) {
         const feedback = `GPT 评分失败：${error.message}\n\n你可以先看右侧参考答案和中文版理解，并按右侧 Quick cues 自测是否覆盖关键点。`;
         if (state.retake.essay === item.id) delete state.retake.essay;
         sessionSeen.essay.add(item.id);
-        const previous = state.essay[item.id] || {};
         const attempts = Number(previous.attempts || (submittedEssayRecord(previous) ? 1 : 0)) + 1;
         state.essay[item.id] = {...previous, answer, feedback, modelAnswer: item.a, modelRubric: item.rubric || [], score: null, correct: false, wrong: true, attempts, draft: false, ts: new Date().toISOString()};
         $("essayStatus").textContent = "评分失败，已显示参考答案。";
