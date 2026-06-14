@@ -652,10 +652,9 @@
     }
 
     .essay-layout > .ai-box {
-      position: sticky;
-      top: 18px;
-      max-height: calc(100vh - 36px);
-      overflow: auto;
+      position: static;
+      max-height: none;
+      overflow: visible;
     }
 
     .essay-layout > .ai-box h3 {
@@ -6070,7 +6069,19 @@
         model = String(record.feedback).replace(/^参考答案[:：]\s*/i, "").split(/\n\s*评分要点[:：]/)[0].trim();
       }
       if (!model) return "";
-      return formattedReviewHtml(`参考答案 / Reference answer\n${model}`);
+      return formattedReviewHtml(`参考答案 / Reference answer\n${model}\n\n中文版理解 / Chinese version\n${chineseStudyVersion(item)}`);
+    }
+
+    function chineseStudyVersion(item) {
+      const cues = answerCueCandidates(item);
+      const terms = extractAnswerTerms(`${item.q || ""} ${item.a || ""}`).slice(0, 6);
+      const answerIdeas = splitAnswerIdeas(item.a || "").slice(0, 3);
+      const lines = [];
+      if (terms.length) lines.push(`这题先抓关键词：${terms.join("、")}。`);
+      if (cues.length) lines.push(`答题顺序可以按：${cues.slice(0, 3).join("；")}。`);
+      if (answerIdeas.length) lines.push(`中文意思是：${answerIdeas.join("；")}。`);
+      lines.push("考试时英文作答，中文只用来帮你理解和背结构。");
+      return lines.join("\n");
     }
 
     function extractMemorySection(feedback) {
@@ -6157,6 +6168,7 @@
         "Missing points: ...",
         "How to improve in exam English: ...",
         "Model answer in 4-6 sentences: ...",
+        "Chinese version of the model answer: Translate/explain the model answer in natural Chinese, keeping important English terms in parentheses.",
         "Example answer memorization tips: Give 2-4 practical tips in Chinese for memorizing and reproducing the model answer in English. Include a short structure formula, key trigger words, and one sentence skeleton the student can reuse."
       ].join("\n");
     }
@@ -6187,7 +6199,7 @@
         return;
       }
       if (!apiKey) {
-        const feedback = `未填写 API key，无法自动评分。\n\n你可以先看下方参考答案，并按右侧 Quick cues 自测是否覆盖关键点。`;
+        const feedback = `未填写 API key，无法自动评分。\n\n你可以先看右侧参考答案和中文版理解，并按右侧 Quick cues 自测是否覆盖关键点。`;
         if (state.retake.essay === item.id) delete state.retake.essay;
         sessionSeen.essay.add(item.id);
         const previous = state.essay[item.id] || {};
@@ -6224,7 +6236,7 @@
         state.essay[item.id] = {answer, feedback, score, correct: score !== null ? score >= 7 : false, wrong: score !== null ? score < 7 : false, attempts, draft: false, ts: new Date().toISOString()};
         $("essayStatus").textContent = "评分完成。";
       } catch (error) {
-        const feedback = `GPT 评分失败：${error.message}\n\n你可以先看下方参考答案，并按右侧 Quick cues 自测是否覆盖关键点。`;
+        const feedback = `GPT 评分失败：${error.message}\n\n你可以先看右侧参考答案和中文版理解，并按右侧 Quick cues 自测是否覆盖关键点。`;
         if (state.retake.essay === item.id) delete state.retake.essay;
         sessionSeen.essay.add(item.id);
         const previous = state.essay[item.id] || {};
