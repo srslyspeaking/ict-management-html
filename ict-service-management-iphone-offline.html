@@ -855,6 +855,42 @@
       line-height: 1.35;
     }
 
+    .drawing-panel {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid #d8e2e2;
+      border-radius: 8px;
+      background: #fbfcfb;
+      display: grid;
+      gap: 10px;
+    }
+
+    .drawing-panel[hidden] {
+      display: none;
+    }
+
+    .drawing-panel input[type="file"] {
+      width: 100%;
+      border: 1px dashed #b8c8c9;
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+      font: inherit;
+    }
+
+    .drawing-preview {
+      max-width: 100%;
+      max-height: 220px;
+      object-fit: contain;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .drawing-preview[hidden] {
+      display: none;
+    }
+
     .voice-status {
       color: var(--muted);
       font-size: 13px;
@@ -1367,6 +1403,9 @@
       .essay-api-strip {
         grid-template-columns: 1fr;
       }
+      .drawing-preview {
+        max-height: 180px;
+      }
       #essayView {
         padding-bottom: 150px;
       }
@@ -1504,6 +1543,7 @@
         <select id="mode">
           <option value="all">全部题目</option>
           <option value="calc">只练计算题 / Calculation</option>
+          <option value="draw">只练画图题 / Diagram</option>
           <option value="hard">只练难题 / Hard cases</option>
           <option value="weak">只练不熟/错题</option>
           <option value="unseen">只练未做</option>
@@ -1622,6 +1662,16 @@
                 </select>
                 <button id="essayInlineGrade" class="primary" type="button">AI评分当前大题</button>
                 <small id="essayInlineApiStatus">这里和右下角 AI 设置共用同一个本机保存 key；答案没变时会复用上次评分，不重复调用 API。</small>
+              </div>
+              <div id="drawingPanel" class="drawing-panel" hidden>
+                <strong>手绘图上传 / Diagram photo</strong>
+                <input id="drawingUpload" type="file" accept="image/*" capture="environment">
+                <img id="drawingPreview" class="drawing-preview" alt="Uploaded diagram preview" hidden>
+                <div class="row">
+                  <button id="analyzeDrawing" class="primary" type="button">AI解析手绘图</button>
+                  <button id="clearDrawing" type="button">清除图片</button>
+                </div>
+                <div id="drawingStatus" class="ai-status">先在纸上画图，拍照上传；图片只临时送去 AI 分析，不写进 HTML。</div>
               </div>
               <div id="essaySource" class="source-note"></div>
               <div class="progress"><div id="essayProgress" class="bar"></div></div>
@@ -4395,6 +4445,26 @@
 
     essayCore.push(...calculationEssayDrills);
 
+    const drawingEssayDrills = [
+      {c:"2", t:"Drawing Essay", q:"EN: Draw Porter's value chain and label the 5 primary activities and 4 support activities. Add one short IT example for a primary activity and one for a support activity.", a:"The drawing should show primary activities as a sequence: inbound logistics, operations, outbound logistics, marketing and sales, service. Support activities should be shown above or across the primary chain: firm infrastructure, human resource management, technology development, procurement. A good answer labels that value is created through activities and that IT can support information flow, automation, coordination, and customer service.", rubric:["Shows 5 primary activities in order","Shows 4 support activities across the chain","Labels value creation/margin idea","Adds IT examples for primary and support activities"]},
+      {c:"3", t:"Drawing Essay", q:"EN: Draw the information systems framework with the four domains. Show at least two relationships between domains and one cross-cutting concern.", a:"The diagram should contain business process, data, application, and infrastructure as four connected domains. Relationships can show that applications support business processes, applications use/create data, infrastructure hosts applications, and process changes affect data/application needs. A cross-cutting concern such as security, compliance, cost, or service level should be drawn across multiple domains.", rubric:["Includes business process/data/application/infrastructure","Shows meaningful relationships between domains","Adds a cross-cutting concern","Avoids treating application as the whole system"]},
+      {c:"13", t:"Drawing Essay", q:"EN: Draw IT as a service from customer demand to resources. Include service catalog, service unit, demand/volume driver, and required resources.", a:"A strong diagram links business demand or process volume to service consumption, service units, and IT resources. It should include service catalog/service offering, users/customers, service unit examples, volume drivers, and resource implications. The point is to show that IT planning and costing start from service demand rather than from hardware alone.", rubric:["Shows customer/user demand","Shows service catalog/offering","Shows service unit and volume driver","Links consumption to IT resources/cost"]},
+      {c:"13", t:"Drawing Essay", q:"EN: Draw the cloud service model stack from IaaS to PaaS to SaaS and indicate what the provider manages versus what the customer manages.", a:"The stack should place IaaS at the bottom, PaaS in the middle, and SaaS at the top. IaaS provides processing, storage, and network capacity. PaaS adds runtime/platform software for customer-developed applications. SaaS provides a complete application. The drawing should show that provider responsibility increases from IaaS to SaaS while customer control decreases.", rubric:["Correct order IaaS/PaaS/SaaS","Shows provider/customer responsibility split","Defines each layer accurately","Shows control versus responsibility trade-off"]},
+      {c:"13", t:"Drawing Essay", q:"EN: Draw the IT4IT value chain with its four value streams and show the logical flow between them.", a:"The IT4IT value chain should include Strategy to Portfolio, Requirement to Deploy, Request to Fulfill, and Detect to Correct. A good drawing shows that IT services are planned and selected, built/deployed, requested/fulfilled by users, and monitored/corrected during operation. It should not be confused with Porter's business value chain.", rubric:["Names four IT4IT value streams","Shows logical flow","Connects service planning/build/request/operate logic","Distinguishes IT4IT from Porter value chain"]},
+      {c:"15", t:"Drawing Essay", q:"EN: Draw the cost recovery logic for an IT service: direct costs, indirect costs, planned volume, standard unit cost, and charge-out to users/business units.", a:"The drawing should show direct costs and allocated indirect costs being added into full service cost. Full cost is divided by planned service volume to obtain a standard unit cost or standard unit price. That unit price is then used for charge-out to users or business units based on consumption. Good diagrams also mention fairness, predictability, and understandability.", rubric:["Shows direct plus indirect costs","Shows division by planned volume","Shows standard unit cost/price","Links result to charge-out and fairness principles"]},
+      {c:"16", t:"Drawing Essay", q:"EN: Draw the relationship between event handling, incident handling, problem handling, and change management for a recurring outage.", a:"The diagram should show event detection or user reports leading to incident handling when service is interrupted. Incident handling restores service quickly. Repeated incidents or threshold events trigger problem handling to find root cause. A permanent fix usually goes through change management with assessment, approval, implementation, and review.", rubric:["Separates event/incident/problem/change","Shows incident restoration versus root cause","Shows repeated incidents leading to problem handling","Shows permanent fix through change management"]},
+      {c:"17", t:"Drawing Essay", q:"EN: Draw a composite availability diagram with three serial tiers and then show how adding parallel hot standby to one tier changes the calculation.", a:"The first drawing should show required serial tiers, where total availability is the product of tier availabilities. The second should show one tier duplicated in parallel/hot standby, where the tier is unavailable only if both parallel components fail. A good answer labels series multiplication and parallel unavailability multiplication.", rubric:["Draws serial required components","Shows total availability multiplication","Draws parallel/hot standby tier","Labels parallel unavailability logic"]},
+      {c:"18", t:"Drawing Essay", q:"EN: Draw a supplier classification matrix. Place examples such as toner vendor, security audit firm, network equipment provider, and core ERP/cloud provider.", a:"The matrix should use criteria such as business importance/risk and substitutability/dependency. Commodity suppliers are low importance and easy to replace, such as toner. Tactical suppliers are important but not deeply integrated, such as a one-time security audit. Strategic suppliers are high dependency and hard to replace, such as core ERP/cloud provider. Network equipment may be tactical or strategic depending on dependency.", rubric:["Uses meaningful matrix dimensions","Places commodity/tactical/strategic examples","Explains dependency and substitutability","Handles ambiguous network provider case"]},
+      {c:"20", t:"Drawing Essay", q:"EN: Draw the COBIT goals cascade from stakeholder needs to enterprise goals, IT-related goals, and enabler/process goals. Add one example for innovation pressure.", a:"The drawing should show stakeholder needs at the top, then enterprise goals, then IT-related goals, then enabler or process goals. For innovation pressure, stakeholder demand for faster product innovation can become enterprise agility/innovation goals, IT-related agility or delivery goals, and process/enabler improvements such as architecture, portfolio management, project management, or quality.", rubric:["Correct cascade order","Includes stakeholder/enterprise/IT-related/enabler goals","Adds innovation example","Avoids starting from random IT process"]},
+      {c:"20", t:"Drawing Essay", q:"EN: Draw ISO/IEC 38500 governance tasks and distinguish them from IT management execution.", a:"The diagram should show Evaluate, Direct, and Monitor as governance tasks. Evaluate assesses current/future IT use, proposals, and pressures. Direct sets principles and direction. Monitor checks performance and conformance. Management execution such as plan/build/run/support should be shown below or separately.", rubric:["Shows Evaluate/Direct/Monitor","Defines each governance task","Separates governance from management","Uses examples of management execution"]},
+      {c:"21", t:"Drawing Essay", q:"EN: Draw the Strategic Impact Grid with its two dimensions and four modes. Place KBC, Bol.com, FOD Finance, and a traditional manufacturing company using case clues.", a:"The grid should use current operational dependence/reliability need and future strategic importance/innovation need. Support is low/low, Factory is high current/low future, Turnaround is low current/high future, Strategic is high/high. Bol.com and KBC are usually Strategic when digital reliability and innovation matter. FOD Finance may be Turnaround if future digital transformation is emphasized. Traditional manufacturing may be Support or Factory depending on reliability clues.", rubric:["Correct two dimensions","Correct four quadrants","Places examples with caveats","Uses case clues instead of company stereotypes"]},
+      {c:"21", t:"Drawing Essay", q:"EN: Draw the Strategic Alignment Model with four domains and the four alignment perspectives.", a:"The Strategic Alignment Model should show business strategy, IT strategy, organizational infrastructure/processes, and IT infrastructure/processes. It should also name or indicate perspectives such as strategy execution, technology transformation, competitive potential, and service level. A strong diagram shows strategic fit between external and internal domains and functional integration between business and IT domains.", rubric:["Shows four SAM domains","Labels strategic fit and functional integration","Names four perspectives","Avoids confusing SAM with Strategic Impact Grid"]},
+      {c:"21", t:"Drawing Essay", q:"EN: Draw the operating model quadrant by process standardization and process/data integration. Label diversification, replication, coordination, and unification.", a:"The quadrant should use process standardization on one axis and process/data integration on the other. Diversification is low/low, Replication is high standardization but low integration, Coordination is high integration but low standardization, and Unification is high/high. Good drawings include short example clues for each quadrant.", rubric:["Correct axes","Correct four quadrant labels","Explains standardization versus integration","Adds example clues"]},
+      {c:"21", t:"Drawing Essay", q:"EN: Draw the three-level business-IT alignment model and show how strategic, tactical, and operational alignment differ.", a:"The drawing should distinguish strategic alignment between business strategy and IT strategy, tactical alignment between business projects and IT projects often using architecture, and operational alignment between daily business operations and IT service delivery. Examples can include portfolio decisions at strategic level, architecture/project coordination at tactical level, and service desk/SLA at operational level.", rubric:["Shows strategic/tactical/operational levels","Connects business and IT at each level","Adds suitable examples","Does not collapse all alignment into strategy only"]}
+    ];
+
+    essayCore.push(...drawingEssayDrills);
+
     function splitSourceEssay(question, answer) {
       const rawQuestion = String(question || "").replace(/\s+/g, " ").trim();
       const rawAnswer = String(answer || "").replace(/\s+/g, " ").trim();
@@ -5693,6 +5763,8 @@
         basis = "Hard case generated from the same course/exercise patterns, designed as a more difficult application question.";
       } else if (tag.includes("calculation")) {
         basis = "Calculation drill generated from the numerical exercises and book examples in the same chapter.";
+      } else if (tag.includes("drawing")) {
+        basis = "Diagram drawing drill generated from models, matrices, and process diagrams that are likely to appear as visual exam answers.";
       } else if (tag.includes("cloze")) {
         basis = "Cloze keyword drill generated from the same chapter concept/definition.";
       }
@@ -5728,6 +5800,11 @@
       ].some(key => text.includes(key));
     }
 
+    function isDrawingEssay(item) {
+      const text = norm(`${item.t} ${item.q} ${item.a || ""}`);
+      return norm(item.t || "").includes("drawing") || text.includes("draw ") || text.includes("diagram") || text.includes("quadrant") || text.includes("matrix");
+    }
+
     function filtered(list, type) {
       const term = norm($("search").value.trim());
       const mode = $("mode").value;
@@ -5738,6 +5815,9 @@
         if (type === "quiz") out = out.filter(isCalculationQuiz);
         else if (type === "essay") out = out.filter(isCalculationEssay);
         else out = [];
+      }
+      if (mode === "draw") {
+        out = type === "essay" ? out.filter(isDrawingEssay) : [];
       }
       if (mode === "hard") {
         out = out.filter(item => norm(item.t).includes("hard"));
@@ -6633,6 +6713,8 @@
         $("essayMaterial").hidden = true;
         $("essayMaterial").innerHTML = "";
         $("essayAnswer").value = "";
+        $("drawingPanel").hidden = true;
+        $("drawingStatus").textContent = "";
         $("essayFeedback").hidden = true;
         $("essayModelAnswer").hidden = true;
         $("essayModelAnswer").innerHTML = "";
@@ -6651,9 +6733,13 @@
       $("essayMaterial").hidden = !item.material;
       $("essayMaterial").innerHTML = item.material || "";
       $("essayAnswer").value = record.answer || "";
+      $("drawingPanel").hidden = !isDrawingEssay(item);
+      if (isDrawingEssay(item)) {
+        $("drawingStatus").textContent = record.drawingFeedback ? "已保存上次手绘图 AI 解析；重新上传照片可再次分析。" : "先在纸上画图，拍照上传；图片只临时送去 AI 分析，不写进 HTML。";
+      }
       $("essaySource").innerHTML = `<strong>来源 / Source:</strong> ${sourceFor(item, "essay")}`;
       $("essayRubric").innerHTML = essayCueHtml(item);
-      const aiFeedback = record.feedback && !/^参考答案[:：]/.test(record.feedback) ? record.feedback : "";
+      const aiFeedback = record.drawingFeedback || (record.feedback && !/^参考答案[:：]/.test(record.feedback) ? record.feedback : "");
       $("essayFeedback").hidden = !aiFeedback;
       $("essayFeedback").innerHTML = aiFeedback ? formattedReviewHtml(`AI 评分复盘 / AI feedback\n\n${aiFeedback}`) : "";
       const modelHtml = referenceFeedbackHtml(item, record);
@@ -6686,8 +6772,125 @@
         "How to improve in exam English: ...",
         "Model answer in 4-6 sentences: ...",
         "Chinese version of the model answer: Translate/explain the model answer in natural Chinese, keeping important English terms in parentheses.",
-        "Example answer memorization tips: Give 2-4 practical tips in Chinese for memorizing and reproducing the model answer in English. Include a short structure formula, key trigger words, and one sentence skeleton the student can reuse."
+      "Example answer memorization tips: Give 2-4 practical tips in Chinese for memorizing and reproducing the model answer in English. Include a short structure formula, key trigger words, and one sentence skeleton the student can reuse."
       ].join("\n");
+    }
+
+    function drawingPrompt(item) {
+      return [
+        "You are grading a student's hand-drawn ICT Service Management diagram from a photo.",
+        "The student studies for an English exam but wants feedback in Chinese with key English terms preserved.",
+        "Analyze the uploaded image. Be strict about missing boxes, wrong axes, wrong arrows, wrong labels, and model confusion.",
+        "Return plain text only. Do not use Markdown headings, asterisks, hashtags, or decorative bullets.",
+        "",
+        `Diagram question: ${item.q}`,
+        "",
+        `Reference structure: ${item.a}`,
+        "",
+        `Rubric: ${(item.rubric || []).join("; ")}`,
+        "",
+        "Output format:",
+        "Score: X/10",
+        "What I can see in your drawing: ...",
+        "Missing or wrong parts: ...",
+        "How to fix the diagram: ...",
+        "Exam memory sketch: Give a compact drawing recipe in Chinese, preserving English labels."
+      ].join("\n");
+    }
+
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(reader.error || new Error("Cannot read image file"));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function compressedImageDataUrl(file, maxSide = 1280, quality = 0.78) {
+      const original = await readFileAsDataUrl(file);
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxSide / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
+          const width = Math.max(1, Math.round((img.naturalWidth || 1) * scale));
+          const height = Math.max(1, Math.round((img.naturalHeight || 1) * scale));
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.onerror = () => resolve(original);
+        img.src = original;
+      });
+    }
+
+    async function analyzeDrawing() {
+      const {item} = currentEssay();
+      if (!item || !isDrawingEssay(item)) return;
+      const apiKey = $("globalApiKey").value.trim();
+      const model = $("globalModel").value;
+      const file = $("drawingUpload").files?.[0];
+      if (!file) {
+        $("drawingStatus").textContent = "先拍照或选择一张你的手绘图。";
+        return;
+      }
+      if (!apiKey) {
+        $("drawingStatus").textContent = "需要先填 API key，才能让 AI 看图解析。";
+        setApiDrawer(true);
+        return;
+      }
+      $("drawingStatus").textContent = "正在读取图片并请求 AI 解析...";
+      $("analyzeDrawing").disabled = true;
+      try {
+        const imageUrl = await compressedImageDataUrl(file);
+        const response = await fetch("https://api.openai.com/v1/responses", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify(responseRequestBody(model, [{
+            role: "user",
+            content: [
+              {type: "input_text", text: drawingPrompt(item)},
+              {type: "input_image", image_url: imageUrl}
+            ]
+          }], 0.1))
+        });
+        const json = await response.json();
+        if (!response.ok) throw new Error(json.error?.message || `HTTP ${response.status}`);
+        const feedback = json.output_text || (json.output || [])
+          .flatMap(part => part.content || [])
+          .map(part => part.text || "")
+          .join("\n")
+          .trim();
+        const score = parseScore(feedback);
+        const previous = state.essay[item.id] || {};
+        state.essay[item.id] = {
+          ...previous,
+          drawingFeedback: feedback || "AI 返回为空；请换一张更清楚的照片重试。",
+          score: score ?? previous.score ?? null,
+          correct: score !== null ? score >= 7 : previous.correct || false,
+          wrong: score !== null ? score < 7 : previous.wrong || false,
+          attempts: Number(previous.attempts || (submittedEssayRecord(previous) ? 1 : 0)) + 1,
+          draft: false,
+          ts: new Date().toISOString()
+        };
+        sessionSeen.essay.add(item.id);
+        if (state.hideDone) state.retain.essay = item.id;
+        $("drawingStatus").textContent = "手绘图解析完成。";
+        save();
+        renderEssay();
+      } catch (error) {
+        $("drawingStatus").textContent = `AI 看图失败：${error.message}`;
+      } finally {
+        $("analyzeDrawing").disabled = false;
+      }
     }
 
     function parseScore(text) {
@@ -7631,6 +7834,27 @@
       essayRecognition.start();
     }
 
+    function handleDrawingUpload() {
+      const file = $("drawingUpload").files?.[0];
+      if (!file) {
+        $("drawingPreview").hidden = true;
+        $("drawingPreview").removeAttribute("src");
+        $("drawingStatus").textContent = "先在纸上画图，拍照上传；图片只临时送去 AI 分析，不写进 HTML。";
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      $("drawingPreview").src = url;
+      $("drawingPreview").hidden = false;
+      $("drawingStatus").textContent = `已选择图片：${file.name || "photo"}。可以点“AI解析手绘图”。`;
+    }
+
+    function clearDrawingUpload() {
+      $("drawingUpload").value = "";
+      $("drawingPreview").hidden = true;
+      $("drawingPreview").removeAttribute("src");
+      $("drawingStatus").textContent = "已清除图片；可以重新拍照上传。";
+    }
+
     $("apiFab").onclick = () => setApiDrawer($("apiDrawer").hidden);
     $("apiClose").onclick = () => setApiDrawer(false);
     $("globalApiKey").oninput = () => syncApiKey("globalApiKey");
@@ -7653,6 +7877,9 @@
       }
     };
     $("voiceEssay").onclick = toggleEssayVoice;
+    $("drawingUpload").onchange = handleDrawingUpload;
+    $("analyzeDrawing").onclick = analyzeDrawing;
+    $("clearDrawing").onclick = clearDrawingUpload;
     $("clearEssayAnswer").onclick = () => {
       $("essayAnswer").value = "";
       saveCurrentEssayDraft();
@@ -7677,6 +7904,7 @@
     $("mode").onchange = () => {
       state.mode = $("mode").value;
       if ($("mode").value === "calc") state.view = "quiz";
+      if ($("mode").value === "draw") state.view = "essay";
       resetPositions();
       render();
     };
