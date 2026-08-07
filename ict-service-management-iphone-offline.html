@@ -921,6 +921,15 @@
       line-height: 1.35;
     }
 
+    .sync-panel input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font: inherit;
+      background: #fff;
+    }
+
     .sync-panel small {
       color: var(--muted);
       line-height: 1.35;
@@ -1237,6 +1246,29 @@
       background: linear-gradient(90deg, var(--brand), var(--green));
       width: 0%;
     }
+    .practice-progress {
+      display: grid;
+      gap: 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fbfa;
+    }
+    .practice-progress-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .practice-progress-head strong {
+      color: var(--ink);
+      font-size: 15px;
+    }
+    .practice-progress-head span {
+      text-align: right;
+    }
     .empty {
       padding: 36px;
       text-align: center;
@@ -1441,6 +1473,16 @@
         font-size: 20px;
         line-height: 1.35;
       }
+      .practice-progress {
+        padding: 9px 10px;
+      }
+      .practice-progress-head {
+        font-size: 11px;
+        gap: 8px;
+      }
+      .practice-progress-head strong {
+        font-size: 13px;
+      }
       .meta { gap: 6px; }
       .pill { font-size: 11px; padding: 3px 8px; }
       .option {
@@ -1600,6 +1642,13 @@
         <div class="flash-wrap">
           <article class="panel flash-card">
             <div>
+              <div class="practice-progress">
+                <div class="practice-progress-head">
+                  <strong id="cardProgressLabel">Flashcards 0 / 0</strong>
+                  <span id="cardProgressDone">已做 0 / 0</span>
+                </div>
+                <div class="progress"><div id="cardProgressTop" class="bar"></div></div>
+              </div>
               <div id="cardMeta" class="meta"></div>
               <h2 id="cardQuestion"></h2>
               <div id="cardAnswer" class="answer hidden">点击“显示答案”后再判断自己是否掌握。</div>
@@ -1624,6 +1673,13 @@
 
       <section id="quizView" hidden>
         <article class="panel quiz">
+          <div class="practice-progress">
+            <div class="practice-progress-head">
+              <strong id="quizProgressLabel">选择题 0 / 0</strong>
+              <span id="quizProgressDone">已做 0 / 0 · 正确率 0%</span>
+            </div>
+            <div class="progress"><div id="quizProgressTop" class="bar"></div></div>
+          </div>
           <div class="meta" id="quizMeta"></div>
           <h2 id="quizQuestion"></h2>
           <div id="options"></div>
@@ -1644,6 +1700,13 @@
         <article class="panel quiz">
           <div class="essay-layout">
             <div>
+              <div class="practice-progress">
+                <div class="practice-progress-head">
+                  <strong id="essayProgressLabel">大题 0 / 0</strong>
+                  <span id="essayProgressDone">已做 0 / 0 · 均分 0/10</span>
+                </div>
+                <div class="progress"><div id="essayProgressTop" class="bar"></div></div>
+              </div>
               <div id="essayMeta" class="meta"></div>
               <h2 id="essayQuestion"></h2>
               <div id="essayMaterial" class="case-material" hidden></div>
@@ -1698,6 +1761,13 @@
 
       <section id="clozeView" hidden>
         <article class="panel quiz">
+          <div class="practice-progress">
+            <div class="practice-progress-head">
+              <strong id="clozeProgressLabel">填空题 0 / 0</strong>
+              <span id="clozeProgressDone">已做 0 / 0 · 正确率 0%</span>
+            </div>
+            <div class="progress"><div id="clozeProgressTop" class="bar"></div></div>
+          </div>
           <div class="meta" id="clozeMeta"></div>
           <h2 id="clozeQuestion"></h2>
           <div class="cloze-input">
@@ -5255,6 +5325,12 @@
       "ictsm-review-exercise-v2",
       "ictsm-review-exam-v1"
     ];
+    [
+      "ictsm-review-sync-hub-url",
+      "ictsm-review-gist-id",
+      "ictsm-review-gist-token",
+      "ictsm-review-gist-enabled"
+    ].forEach(key => localStorage.removeItem(key));
 
     function readState(key) {
       try {
@@ -5425,12 +5501,15 @@
       merged.quiz = mergeRecordMap(current.quiz, incoming.quiz);
       merged.essay = mergeRecordMap(current.essay, incoming.essay);
       merged.cloze = mergeRecordMap(current.cloze, incoming.cloze);
+      merged.itemAI = mergeRecordMap(current.itemAI, incoming.itemAI);
       merged.retain = {...(current.retain || {}), ...(incoming.retain || {})};
       merged.retake = {...(current.retake || {}), ...(incoming.retake || {})};
       merged.chapter ||= "all";
       merged.view ||= "quiz";
       merged.mode ||= "all";
       merged.search ||= "";
+      merged.sidebarCollapsed = Boolean(merged.sidebarCollapsed);
+      merged.hideDone = Boolean(merged.hideDone);
       merged.cardIndex = Number.isInteger(merged.cardIndex) ? merged.cardIndex : 0;
       merged.quizIndex = Number.isInteger(merged.quizIndex) ? merged.quizIndex : 0;
       merged.essayIndex = Number.isInteger(merged.essayIndex) ? merged.essayIndex : 0;
@@ -5549,6 +5628,7 @@
         setSyncStatus(`同步失败：${error.message}`);
       }
     }
+
     const norm = (s) => s.toLowerCase();
     const glossary = [
       {id:"business-process", term:"Business process", zh:"业务流程", chapter:"Chapter 2", aliases:["business process", "business processes"], explain:"A structured set of activities performed in an organization to create value for customers, citizens, or internal stakeholders.", tip:"Exam cue: distinguish process from activity and business function."},
@@ -5882,6 +5962,51 @@
     function firstUnansweredIndex(list, type) {
       const index = list.findIndex(item => !hasMeaningfulRecord(type, item));
       return index === -1 ? 0 : index;
+    }
+
+    function progressSummary(type, list) {
+      let done = 0;
+      let correct = 0;
+      let scored = 0;
+      let scoreTotal = 0;
+      list.forEach(item => {
+        if (!hasMeaningfulRecord(type, item)) return;
+        done += 1;
+        if (type === "card") {
+          if (state.known[item.id]) correct += 1;
+          return;
+        }
+        const record = state[type]?.[item.id] || {};
+        if (record.correct) correct += 1;
+        if (type === "essay" && Number.isFinite(record.score)) {
+          scored += 1;
+          scoreTotal += Number(record.score);
+        }
+      });
+      return {done, correct, scored, scoreTotal};
+    }
+
+    function updatePracticeProgress(type, label, index, list) {
+      const total = list.length;
+      const safeIndex = total ? Math.max(0, Math.min(index, total - 1)) + 1 : 0;
+      const pct = total ? safeIndex / total * 100 : 0;
+      const summary = progressSummary(type, list);
+      const labelEl = $(`${type}ProgressLabel`);
+      const doneEl = $(`${type}ProgressDone`);
+      const topBar = $(`${type}ProgressTop`);
+      if (labelEl) labelEl.textContent = `${label} ${safeIndex} / ${total}`;
+      if (doneEl) {
+        if (type === "essay") {
+          const avg = summary.scored ? (summary.scoreTotal / summary.scored).toFixed(1) : "0";
+          doneEl.textContent = `已做 ${summary.done} / ${total} · 均分 ${avg}/10`;
+        } else {
+          const accuracy = summary.done ? Math.round(summary.correct / summary.done * 100) : 0;
+          doneEl.textContent = type === "card"
+            ? `已做 ${summary.done} / ${total} · 掌握 ${summary.correct}`
+            : `已做 ${summary.done} / ${total} · 正确率 ${accuracy}%`;
+        }
+      }
+      if (topBar) topBar.style.width = `${pct}%`;
     }
 
     function seeded(text) {
@@ -6294,10 +6419,12 @@
         $("cardAiExplain").innerHTML = "";
         $("cardList").innerHTML = `<div class="empty">当前筛选没有卡片</div>`;
         $("cardProgress").style.width = "0%";
+        updatePracticeProgress("card", "Flashcards", 0, []);
         return;
       }
       state.cardIndex = Math.max(0, Math.min(state.cardIndex, list.length - 1));
       const item = list[state.cardIndex];
+      updatePracticeProgress("card", "Flashcards", state.cardIndex, list);
       $("cardMeta").innerHTML = metaHtml("card", item, state.cardIndex, list.length);
       $("cardQuestion").innerHTML = annotatedText(item.q);
       $("cardAnswer").innerHTML = state.showAnswer ? annotatedText(item.a) : "点击“显示答案”后再判断自己是否掌握。";
@@ -6332,10 +6459,12 @@
         $("quizAiExplain").hidden = true;
         $("quizAiExplain").innerHTML = "";
         $("quizProgress").style.width = "0%";
+        updatePracticeProgress("quiz", "选择题", 0, []);
         return;
       }
       state.quizIndex = Math.max(0, Math.min(state.quizIndex, list.length - 1));
       const item = list[state.quizIndex];
+      updatePracticeProgress("quiz", "选择题", state.quizIndex, list);
       const isRetake = state.retake.quiz === item.id || ($("mode").value === "weak" && !sessionSeen.quiz.has(item.id));
       const storedRecord = state.quiz[item.id];
       const record = (!isRetake && sessionSeen.quiz.has(item.id)) ? storedRecord : null;
@@ -6405,10 +6534,12 @@
         $("clozeAiExplain").hidden = true;
         $("clozeAiExplain").innerHTML = "";
         $("clozeProgress").style.width = "0%";
+        updatePracticeProgress("cloze", "填空题", 0, []);
         return;
       }
       const isRetake = state.retake.cloze === item.id || ($("mode").value === "weak" && !sessionSeen.cloze.has(item.id));
       const record = isRetake ? null : state.cloze[item.id];
+      updatePracticeProgress("cloze", "填空题", state.clozeIndex, list);
       $("clozeInput").disabled = false;
       $("clozeMeta").innerHTML = metaHtml("cloze", item, state.clozeIndex, list.length);
       $("clozeQuestion").innerHTML = annotatedText(item.q);
@@ -6722,12 +6853,14 @@
         $("essaySource").innerHTML = "";
         $("essayRubric").innerHTML = "";
         $("essayProgress").style.width = "0%";
+        updatePracticeProgress("essay", "大题", 0, []);
         return;
       }
       const isRetake = state.retake.essay === item.id;
       const storedRecord = state.essay[item.id] || {};
       const showStoredAnswer = !isRetake && (submittedEssayRecord(storedRecord) || sessionSeen.essay.has(item.id));
       const record = showStoredAnswer ? storedRecord : {};
+      updatePracticeProgress("essay", "大题", state.essayIndex, list);
       $("essayMeta").innerHTML = `${metaHtml("essay", item, state.essayIndex, list.length)}${attemptPill("essay", item)}`;
       $("essayQuestion").innerHTML = annotatedText(item.q);
       $("essayMaterial").hidden = !item.material;
