@@ -167,6 +167,34 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
+
+    .filter-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .filter-check input {
+      width: auto;
+      margin-top: 2px;
+    }
+
+    .filter-check span {
+      display: grid;
+      gap: 2px;
+    }
+
+    .filter-check small {
+      color: var(--muted);
+      font-size: 11px;
+    }
     input, select {
       width: 100%;
       border: 1px solid var(--line);
@@ -353,6 +381,17 @@
       padding: 12px 14px;
       color: #513224;
       border-radius: 6px;
+    }
+
+    .ai-item-explain {
+      background: #f7faf9;
+      border-left-color: var(--brand);
+      color: var(--ink);
+      line-height: 1.55;
+    }
+
+    .ai-item-explain .review-card {
+      background: #fff;
     }
     .term {
       color: var(--brand);
@@ -752,13 +791,26 @@
       overflow-x: auto;
     }
 
-    .material-image {
-      width: 100%;
-      max-height: 520px;
-      object-fit: contain;
+    .material-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      width: fit-content;
+      max-width: 100%;
+      padding: 8px 11px;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
+      color: var(--brand);
+      font-weight: 800;
+      text-decoration: none;
+      line-height: 1.25;
+    }
+
+    .material-link:hover {
+      border-color: var(--brand);
+      background: #f3f8f8;
     }
 
     .essay-tools {
@@ -767,6 +819,40 @@
       gap: 8px;
       margin-top: 10px;
       align-items: center;
+    }
+
+    .essay-api-strip {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #cbd8d9;
+      border-radius: 8px;
+      background: #f7faf9;
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) minmax(120px, 170px) minmax(130px, auto);
+      gap: 8px;
+      align-items: center;
+    }
+
+    .essay-api-strip input,
+    .essay-api-strip select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font: inherit;
+      background: #fff;
+      min-width: 0;
+    }
+
+    .essay-api-strip button {
+      min-width: 0;
+      white-space: normal;
+    }
+
+    .essay-api-strip small {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      line-height: 1.35;
     }
 
     .voice-status {
@@ -1278,6 +1364,9 @@
         max-height: none;
       }
       .essay-answer { min-height: 150px; }
+      .essay-api-strip {
+        grid-template-columns: 1fr;
+      }
       #essayView {
         padding-bottom: 150px;
       }
@@ -1414,11 +1503,15 @@
         <label>练习范围</label>
         <select id="mode">
           <option value="all">全部题目</option>
-          <option value="calc">只练计算选择题 / Calculation MCQ</option>
+          <option value="calc">只练计算题 / Calculation</option>
           <option value="hard">只练难题 / Hard cases</option>
           <option value="weak">只练不熟/错题</option>
           <option value="unseen">只练未做</option>
         </select>
+        <label class="filter-check" for="hideDone">
+          <input id="hideDone" type="checkbox">
+          <span>隐藏已做 / Hide done<small>临时过滤，不删除进度；适合刷新增难题。</small></span>
+        </label>
       </div>
 
       <div class="row">
@@ -1470,6 +1563,7 @@
               <div id="cardMeta" class="meta"></div>
               <h2 id="cardQuestion"></h2>
               <div id="cardAnswer" class="answer hidden">点击“显示答案”后再判断自己是否掌握。</div>
+              <div id="cardAiExplain" class="explain ai-item-explain" hidden></div>
               <div id="cardSource" class="source-note"></div>
             </div>
             <div>
@@ -1477,6 +1571,7 @@
               <div class="row" style="margin-top:14px">
                 <button id="prevCard" class="icon" title="上一张">‹</button>
                 <button id="showAnswer" class="primary">显示答案 / Show</button>
+                <button id="aiExplainCard">AI解析本卡</button>
                 <button id="knownCard" class="good">掌握 / Know</button>
                 <button id="weakCard" class="bad">不熟 / Review</button>
                 <button id="nextCard" class="icon" title="下一张">›</button>
@@ -1493,11 +1588,13 @@
           <h2 id="quizQuestion"></h2>
           <div id="options"></div>
           <div id="explain" class="explain" hidden></div>
+          <div id="quizAiExplain" class="explain ai-item-explain" hidden></div>
           <div id="quizSource" class="source-note"></div>
           <div class="progress"><div id="quizProgress" class="bar"></div></div>
           <div class="row">
             <button id="prevQuiz" class="icon" title="上一题">‹</button>
             <button id="quizMap">知识地图 / Map</button>
+            <button id="aiExplainQuiz">AI解析本题（含答案）</button>
             <button id="nextQuiz" class="primary">下一题</button>
           </div>
         </article>
@@ -1515,6 +1612,16 @@
                 <button id="voiceEssay" type="button">语音输入 / Dictate</button>
                 <button id="clearEssayAnswer" type="button">清空答案</button>
                 <span id="voiceStatus" class="voice-status">支持浏览器会使用系统语音识别；不支持时仍可手打。</span>
+              </div>
+              <div class="essay-api-strip">
+                <input id="essayInlineApiKey" type="password" autocomplete="off" placeholder="OpenAI API key for essay grading">
+                <select id="essayInlineModel">
+                  <option value="gpt-5.5">gpt-5.5</option>
+                  <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                  <option value="gpt-4o-mini">gpt-4o-mini</option>
+                </select>
+                <button id="essayInlineGrade" class="primary" type="button">AI评分当前大题</button>
+                <small id="essayInlineApiStatus">这里和右下角 AI 设置共用同一个本机保存 key；答案没变时会复用上次评分，不重复调用 API。</small>
               </div>
               <div id="essaySource" class="source-note"></div>
               <div class="progress"><div id="essayProgress" class="bar"></div></div>
@@ -1552,10 +1659,12 @@
           </div>
           <div id="clozeResult" class="cloze-result" hidden></div>
           <div id="clozeExplain" class="explain" hidden></div>
+          <div id="clozeAiExplain" class="explain ai-item-explain" hidden></div>
           <div id="clozeSource" class="source-note"></div>
           <div class="progress"><div id="clozeProgress" class="bar"></div></div>
           <div class="row">
             <button id="prevCloze" class="icon" title="上一题">‹</button>
+            <button id="aiExplainCloze">AI解析本题（含答案）</button>
             <button id="nextCloze" class="primary">下一题</button>
           </div>
         </article>
@@ -4173,12 +4282,64 @@
 
     quiz.push(...makeStuviaQuiz());
 
+    const advancedHardQuiz = [
+      {c:"2", t:"Hard Exam Trap", q:"EN: A hospital introduces barcode medication scanning. It reduces nurse errors, creates audit data, and later supports redesign of pharmacy workflows. Which answer best classifies the benefits?", o:["Operational first, then tactical/process improvement potential","Strategic only, because healthcare is always strategic","Tactical only, because audit data is always management data","No IT benefit, because nurses still perform the work"], a:0, e:"The first effect is operational error reduction. Audit/process redesign may create tactical benefits. Do not classify by sector name alone."},
+      {c:"2", t:"Hard Exam Trap", q:"EN: A webshop improves checkout speed by 20%, but competitors can copy the same software package. What is the strongest course-style conclusion?", o:["The package is commodity; advantage depends on distinctive IT capability","The package itself guarantees sustainable competitive advantage","The benefit is impossible because IT cannot support strategy","The effect is only supplier management and not a business benefit"], a:0, e:"The book distinction is IT resources versus IT capabilities. Commodity resources can still support advantage if used better than competitors."},
+      {c:"2", t:"Hard Exam Trap", q:"EN: A dashboard gives regional managers early warning of falling sales but does not automate any transaction. Which benefit is most direct?", o:["Tactical benefit through better management control","Operational benefit through faster transaction processing","Strategic benefit because all dashboards change strategy","Infrastructure benefit because it probably uses servers"], a:0, e:"Better management decisions and control are tactical. Automation of daily tasks would be operational."},
+      {c:"2", t:"Hard Exam Trap", q:"EN: A supplier portal connects manufacturer forecasts to suppliers' production planning. Which model is most useful?", o:["Value system/supply chain, because information flows across firms","Only internal value chain, because suppliers are outside the firm","Only business function, because procurement is one department","Only infrastructure domain, because portals need networks"], a:0, e:"The clue is cross-organization information exchange. That points to value systems and supply chains."},
+      {c:"3", t:"Hard Exam Trap", q:"EN: A CRM project installs the application on time, but sales teams keep old spreadsheets and customer master data is inconsistent. Which framework diagnosis is strongest?", o:["Application changed, but business process and data domains were not aligned","Infrastructure capacity was the only missing domain","The project failed because governance should never involve users","The issue is only a supplier classification problem"], a:0, e:"Chapter 3 framework thinking: application, data, process, and infrastructure must fit together."},
+      {c:"3", t:"Hard Exam Trap", q:"EN: Which decision is governance rather than management?", o:["Deciding which IT investment principles support business strategy","Assigning today's incident ticket to a second-line engineer","Replacing a failed disk according to an operating procedure","Creating a user account after a standard service request"], a:0, e:"Governance sets direction and decision rights. The other options are operational management activities."},
+      {c:"3", t:"Hard Exam Trap", q:"EN: A new system requires legal retention rules for customer data. Which framework element makes this concern visible across domains?", o:["Concerns, because compliance cuts across process, data, application, and infrastructure","Only application domain, because retention is coded in software","Only infrastructure domain, because storage keeps the data","Only service desk, because users may ask questions"], a:0, e:"Concerns are cross-cutting worries such as security, compliance, cost, and service levels."},
+      {c:"13", t:"Hard Exam Trap", q:"EN: A university offers Toledo access to students. Network login and storage are needed behind the scenes. Which service-type mapping is best?", o:["Toledo access is end-user service; login/storage can be basic services","Toledo is a basic service because it uses infrastructure","Storage is an extra service only because students like it","All three must be extra services because they add value"], a:0, e:"End-user services are directly consumed. Basic services implement end-user services behind the scenes."},
+      {c:"13", t:"Hard Exam Trap", q:"EN: A department wants 'unlimited support included by default' for every service. Which cost/service design risk is most precise?", o:["Support consumption becomes hidden, making service units and charge-out less transparent","It automatically turns support into a cloud service model","It proves the service is not an IT service","It makes support a strategic supplier by definition"], a:0, e:"The trap is hidden consumption/cost. Course logic cares about measurable units, fairness, and cost awareness."},
+      {c:"13", t:"Hard Exam Trap", q:"EN: A provider supplies a development runtime, database service, and deployment pipeline; the customer writes its own application. Which cloud model?", o:["PaaS, because the provider supplies the platform for customer applications","SaaS, because every cloud service is a finished application","IaaS, because the customer writes business logic","Outsourcing only, because cloud models do not include platforms"], a:0, e:"PaaS = platform/runtime/database services for customer-developed applications."},
+      {c:"13", t:"Hard Exam Trap", q:"EN: Which service unit is most defensible for network storage if cost depends heavily on consumed capacity and users can predict quotas?", o:["GB-month or storage amount per period","Employee-year, regardless of actual storage use","Number of incident tickets per month","Number of servers in the data center"], a:0, e:"A volume-related unit is suitable when cost follows consumption and users can understand/predict it."},
+      {c:"13", t:"Hard Calculation", q:"EN: Orders grow from 9,500 to 11,200. One order-processing employee can handle 2,000 orders and each needs one SAP account. Current staff/accounts for 9,500 orders?", o:["5 accounts now, 6 accounts after growth","4 accounts now, 5 accounts after growth","5 accounts now, 5 accounts after growth","6 accounts now, 6 accounts after growth"], a:0, e:"ceil(9500/2000)=5 and ceil(11200/2000)=6. This is a stepped relationship."},
+      {c:"13", t:"Hard Calculation", q:"EN: Under Grosch's law, capacity x4 costs about sqrt(4)=2. If old unit cost is 1 per capacity unit, new unit cost is?", o:["0.50 per capacity unit","2.00 per capacity unit","1.00 per capacity unit","4.00 per capacity unit"], a:0, e:"Cost doubles while capacity quadruples, so unit cost becomes 2/4 = 0.5."},
+      {c:"14", t:"Hard Exam Trap", q:"EN: A professor asks for a new AI grading platform not in the catalog, requiring licenses, integration, privacy review, and training. Which route fits?", o:["IT services manager/project-style handling after validation and cost analysis","Immediate service desk fulfillment as a simple catalog request","Incident handling because the professor reports a need","Standard change because all software requests are pre-approved"], a:0, e:"Out-of-catalog and complex requests require validation, resources, lead time, and financial analysis."},
+      {c:"14", t:"Hard Exam Trap", q:"EN: In service planning, business expects 15% more students but printing falls due to digital exams. What is the best planning lesson?", o:["Do not forecast service volume from one business driver without checking process changes","Always increase every IT service volume by 15%","Ignore business volume because IT planning uses only last year's hardware","Treat printing decrease as an incident to be resolved"], a:0, e:"Service volume drivers are process-specific. Student count alone is not always enough."},
+      {c:"15", t:"Hard Calculation", q:"EN: Budget cost 200,000 for 10,000 units. Actual cost 210,000 for 12,000 units. Which statement is correct?", o:["Actual unit cost is lower despite total cost being higher","Actual unit cost is higher because total cost is higher","Standard and actual unit cost are both 20","Volume is irrelevant to charge-out calculations"], a:0, e:"Standard = 20. Actual = 210,000/12,000 = 17.50, so unit cost fell."},
+      {c:"15", t:"Hard Calculation", q:"EN: Service A direct costs 80,000. It receives 20% of a 50,000 shared management cost. Planned volume is 3,000 units. Full cost unit price?", o:["30.00","26.67","16.67","43.33"], a:0, e:"Allocated indirect = 10,000. Full cost = 90,000. Unit price = 90,000/3,000 = 30."},
+      {c:"15", t:"Hard Calculation", q:"EN: Project: Y0=-150, Y1=70, Y2=70, Y3=70, discount 10%. Closest NPV?", o:["About +24.1","About +60.0","About -24.1","About +210.0"], a:0, e:"70/1.1 + 70/1.21 + 70/1.331 = 63.6 + 57.9 + 52.6 = 174.1; minus 150 = +24.1."},
+      {c:"15", t:"Hard Calculation", q:"EN: Project A NPV = +20 with high strategic risk. Project B NPV = +10 and mandatory compliance. Which exam answer is safest?", o:["NPV informs but does not replace strategic, risk, and compliance judgment","Project A must always be chosen because NPV is higher","Project B cannot be chosen because compliance has no value","Both projects are rejected because only IRR matters"], a:0, e:"Financial value is not the only criterion. Compliance and risk can dominate."},
+      {c:"15", t:"Hard Exam Trap", q:"EN: A charge-out formula is very accurate but users cannot predict or verify their bill. Which principle is violated most clearly?", o:["Understandability/predictability of the charge-out mechanism","Full cost recovery as a zero-balance principle","The existence of a service catalog","The idea that IT can use indirect costs"], a:0, e:"Good charge-out must be understandable, fair, predictable, verifiable, and consistent."},
+      {c:"16", t:"Hard Exam Trap", q:"EN: A recurring disk-space alert appears every Friday. Users are not down yet. What is the best process move?", o:["Treat threshold events as problem detection before more incidents occur","Close it as irrelevant because no user has called yet","Approve it as a standard change without investigation","Classify it as supplier management because disks are hardware"], a:0, e:"Problem detection can come from threshold events, not only from user incidents."},
+      {c:"16", t:"Hard Exam Trap", q:"EN: A service desk applies a documented password reset. Later, engineers patch the identity server to prevent repeated lockouts. Which pair is best?", o:["Standard request/change first; problem/change work later for root cause","Urgent change first; service catalog design later","Supplier classification first; governance monitoring later","Only event handling, because no incident can involve accounts"], a:0, e:"Password reset can be standard handling; repeated lockouts require root-cause/problem work and a controlled change."},
+      {c:"16", t:"Hard Exam Trap", q:"EN: A normal change has clear business value, but no back-out plan and unclear test result. What should the CAB do?", o:["Delay or reject approval until risk controls are sufficient","Approve because business value automatically overrides risk","Reclassify it as a standard change to avoid paperwork","Send it to finance because all risk is cost risk"], a:0, e:"Normal changes require assessment, risk, testing, and back-out/recovery planning."},
+      {c:"17", t:"Hard Exam Trap", q:"EN: '99.9% availability of the database server' is measurable. Why may it still be weak as customer SLA?", o:["It measures an infrastructure component rather than the user-facing service","It uses a percentage, which SLAs should never use","It has too much business wording for IT engineers","It is impossible to monitor availability"], a:0, e:"Good SLA wording should be service-facing. Infrastructure metrics may belong in operational level agreements."},
+      {c:"17", t:"Hard Calculation", q:"EN: A service needs two serial components: web 99.9% and database 99.5%. Approximate service availability?", o:["99.4%","99.9%","99.5%","100.4%"], a:0, e:"0.999 x 0.995 = 0.994005, about 99.4%."},
+      {c:"17", t:"Hard Calculation", q:"EN: One application server has availability 98%. Two identical active/passive servers in parallel fail independently. Tier availability?", o:["99.96%","98.00%","96.04%","99.00%"], a:0, e:"Parallel unavailability = 0.02 x 0.02 = 0.0004, so availability = 99.96%."},
+      {c:"17", t:"Hard Calculation", q:"EN: SLA 99.8% monthly availability over 30 days. Approximate allowed downtime?", o:["About 86 minutes","About 43 minutes","About 8.6 minutes","About 3.6 hours"], a:0, e:"30 days = 720h. 0.2% downtime = 1.44h = 86.4 minutes."},
+      {c:"18", t:"Hard Exam Trap", q:"EN: A cloud provider hosts the core ERP, owns migration tooling, and exit would take two years. Which supplier classification is most defensible?", o:["Strategic supplier due to dependency, risk, and hard substitution","Commodity supplier because cloud is standardized","Operational supplier because ERP is an application","Tactical supplier only because contracts are temporary"], a:0, e:"Deep dependency and hard replacement move the supplier toward strategic."},
+      {c:"18", t:"Hard Exam Trap", q:"EN: A one-time penetration test is important for a launch, but many qualified firms exist and no long-term integration follows. Classify best.", o:["Tactical supplier, important but not deeply integrated long term","Strategic supplier because security is always strategic","Commodity supplier because it is only one invoice","End-user service because users see the report"], a:0, e:"Important specialist work can be tactical without becoming a strategic partnership."},
+      {c:"18", t:"Hard Exam Trap", q:"EN: Toner is usually commodity, but a strike makes one delivery urgent. What should change?", o:["Operational priority may change, but long-term supplier class need not become strategic","It automatically becomes strategic forever","It becomes IT governance rather than supplier management","It becomes an SLA instead of a supplier issue"], a:0, e:"Do not confuse temporary urgency with long-term strategic importance and substitutability."},
+      {c:"19", t:"Hard Exam Trap", q:"EN: A business analyst models invoice approval steps and data needs, while a system administrator creates access rights. What is the distinction?", o:["Business/process translation versus technical configuration and operation","Both are service desk first-contact tasks","Both are supplier negotiation tasks","Both are only governance board decisions"], a:0, e:"Roles differ: analysis/architecture maps business needs; sysadmin configures systems and access."},
+      {c:"19", t:"Hard Exam Trap", q:"EN: Which activity belongs least naturally to Development?", o:["Handling daily password reset requests from users","Building a custom workflow application","Customizing an existing software package","Integrating a new software component"], a:0, e:"Daily user request handling belongs to service desk/operations, not development."},
+      {c:"19", t:"Hard Exam Trap", q:"EN: The CIO attends an executive meeting to explain IT investment trade-offs. Which role aspect is most central?", o:["Linking IT department decisions to organizational objectives","Resetting individual passwords faster than the service desk","Writing every architecture diagram personally","Negotiating every toner purchase personally"], a:0, e:"CIO is the senior IT management role connecting IT to enterprise goals and governance."},
+      {c:"20", t:"Hard Exam Trap", q:"EN: A board asks whether IT proposals comply with law and business objectives before funding. Which ISO/IEC 38500 task is most direct?", o:["Evaluate, because proposals and current/future IT use are assessed","Direct, because every question from the board is a directive","Monitor, because no decision can happen before measurement","DSS, because service support owns all governance"], a:0, e:"Evaluate assesses current/future use, proposals, and pressures before direction is set."},
+      {c:"20", t:"Hard Exam Trap", q:"EN: Belgapump wants faster product innovation. In COBIT goals cascade, what is the best logic?", o:["Stakeholder need maps to enterprise goal, then IT-related goals, then enabler/process goals","Start with a random IT process and declare it strategic afterward","Skip enterprise goals because COBIT is only operational","Use only supplier classification to pick goals"], a:0, e:"COBIT cascade is stakeholder needs -> enterprise goals -> IT-related goals -> enabler/process goals."},
+      {c:"20", t:"Hard Exam Trap", q:"EN: A steering committee contains only IT architects. It decides which sales application features have business value. What is the governance flaw?", o:["Decision rights lack business/user representation for application value decisions","Architects should never participate in IT decisions","The committee is invalid because governance cannot use committees","The flaw is only missing toner suppliers"], a:0, e:"Application and investment value decisions need business stakeholders, not only technical experts."},
+      {c:"20", t:"Hard Exam Trap", q:"EN: Which is management rather than governance in COBIT-style language?", o:["Running incident resolution and service support activities","Evaluating whether IT strategy supports stakeholder needs","Directing principles for IT investment behavior","Monitoring conformance with external obligations"], a:0, e:"Deliver/service/support activities are management execution. Evaluate/direct/monitor are governance."},
+      {c:"21", t:"Hard Exam Trap", q:"EN: A retailer's current online platform must be reliable today, and future growth depends on personalization and marketplace data. Which Strategic Impact Grid mode?", o:["Strategic mode: high current dependence and high future importance","Factory mode: high current dependence but low future importance","Turnaround mode: low current dependence and high future importance","Support mode: low current and low future importance"], a:0, e:"Both current operations and future strategy depend heavily on IT."},
+      {c:"21", t:"Hard Exam Trap", q:"EN: A tax agency's current legacy IT is not mission-critical for daily service, but a mandatory digital portal will transform citizen interaction. Which grid mode?", o:["Turnaround mode","Factory mode","Support mode","Strategic mode by default"], a:0, e:"Future strategic importance is high while current operational dependence is lower: Turnaround."},
+      {c:"21", t:"Hard Exam Trap", q:"EN: In SAM, business strategy drives IT strategy, and IT infrastructure follows the chosen IT strategy. Which perspective?", o:["Technology transformation","Strategy execution","Competitive potential","Service level"], a:0, e:"Technology transformation starts from business strategy and translates it into IT strategy/infrastructure."},
+      {c:"21", t:"Hard Exam Trap", q:"EN: In SAM, IT strategy creates new business opportunities and reshapes business strategy. Which perspective?", o:["Competitive potential","Strategy execution","Service level","Factory mode"], a:0, e:"Competitive potential starts from IT strategy and uses technology opportunities to shape business strategy."},
+      {c:"21", t:"Hard Exam Trap", q:"EN: A company has standardized branch processes but each branch's customer data remains local and transactions are aggregated later. Which operating model?", o:["Replication","Unification","Coordination","Diversification"], a:0, e:"High process standardization with lower data/process integration = Replication."},
+      {c:"21", t:"Hard Exam Trap", q:"EN: A diversified group has autonomous units but shared customer master data and cross-selling needs. Which operating-model pressure increases?", o:["Toward Coordination, because integration rises while standardization may stay lower","Toward Replication, because all autonomy disappears immediately","Toward Diversification, because shared data reduces integration","Toward Support mode, because operating models equal grid modes"], a:0, e:"Shared data/customers increase integration. If processes remain diverse, Coordination is the clue."},
+      {c:"21", t:"Hard Exam Trap", q:"EN: Barry Callebaut case wording stresses 'rapid product innovation, high-value chocolate recipes, flexible production for premium clients'. Which focus?", o:["Product focus","Operational focus","Financial focus","Service level perspective"], a:0, e:"Innovation, high-value products, flexible product delivery -> Product focus."},
+      {c:"21", t:"Hard Exam Trap", q:"EN: Same company, but wording stresses 'large volumes, efficient plants, stable distribution and process automation'. Which focus?", o:["Operational focus","Product focus","Customer focus","Competitive potential"], a:0, e:"Large-volume process efficiency and automation -> Operational focus."},
+      {c:"21", t:"Hard Exam Trap", q:"EN: Which answer best distinguishes Strategic Impact Grid from Strategic Alignment Model?", o:["Grid classifies IT importance; SAM explains alignment paths between business and IT domains","Grid is about service units; SAM is about charge-out formulas","Grid classifies suppliers; SAM classifies cloud deployment models","Grid and SAM are identical labels for the same four quadrants"], a:0, e:"The exam trap is mixing all Chapter 21 models. Grid = current/future IT importance; SAM = alignment domains/perspectives."},
+      {c:"21", t:"Hard Exam Trap", q:"EN: Which answer best distinguishes strategic focus points from operating models?", o:["Focus points describe competitive/business emphasis; operating models describe standardization and integration","Focus points are COBIT goals; operating models are SLA metrics","Focus points are cloud models; operating models are supplier classes","Both are only different names for customer focus"], a:0, e:"Focus = financial/operational/product/customer. Operating model = standardization x integration."}
+    ];
+
+    quiz.push(...advancedHardQuiz);
+
     const essayCore = [
       {c:"2", t:"Book Essay", q:"EN: Explain how business processes, the value chain, value systems, and supply chains are related. Give one example of where IT creates value.", a:"A strong answer explains that an organization can be viewed as a system that creates added value through business processes. Porter value chain separates primary and support activities. Multiple organizations' value chains can connect into a value system, and a supply chain is a common value-system example. IT supports information flows, coordination, tracking, integration, and sometimes competitive advantage.", rubric:["Defines business process and value creation","Distinguishes value chain and value system","Explains supply chain as connected value chains","Gives an IT-supported information-flow example"]},
       {c:"2", t:"Book Essay", q:"EN: Distinguish operational, tactical, and strategic benefits of information systems. Use examples.", a:"Operational benefits improve day-to-day efficiency, speed, error reduction, or cost. Tactical benefits help management achieve objectives and make better decisions. Strategic benefits affect competitive positioning, strategy, or business model. The same system can move between levels depending on business intent.", rubric:["Defines all three benefit levels","Uses examples rather than just labels","Classifies by business effect, not technology name","Mentions that the same system can support different benefit levels"]},
       {c:"3", t:"Book Essay", q:"EN: Explain the four domains of the information systems framework and why a project can fail when only the application domain is considered.", a:"The domains are business process, data, application, and infrastructure. A project can fail if software is built but business processes are not redesigned, data ownership is unclear, or infrastructure cannot support the application. The framework prevents one-domain thinking and supports alignment across business and technology.", rubric:["Names four domains","Explains each domain briefly","Explains one-domain failure","Connects framework to alignment/management"]},
       {c:"13", t:"Book Essay", q:"EN: Explain IT as a service. Include service type, service class, service unit, and why choosing the wrong service unit matters.", a:"IT as a service means users obtain value without owning all resources that deliver it. Service types/classes describe what is delivered and its quality/business role. The service unit measures consumption, such as PC-year, access-year, mailbox-month, printed page, or GB storage. Wrong units make planning, costing, charge-out, and fairness weak.", rubric:["Explains service logic","Mentions type/class/unit","Gives service-unit examples","Explains planning/costing consequence"]},
-      {c:"13", t:"Exercise Material Essay", q:"EN: Use the KU Leuven service catalog material. Choose suitable service units for at least five services, then identify business processes or parameters that drive consumption volume.", material:`<h3>Exercise material · KU Leuven IT services</h3><img class="material-image" src="itm-material-images/ku-leuven-service-material.png" alt="Original exercise image: KU Leuven IT service catalog and volume-driver questions"><table class="mini-table"><tr><th>Service</th><th>Description / users</th><th>Suggested service unit</th><th>Driver examples</th></tr><tr><td>Administrative applications</td><td>KU Loket, course schedules, room reservation; students, academic staff, administration</td><td>Access x academic year</td><td>Number of students/staff needing access</td></tr><tr><td>E-library access</td><td>Electronic library resources such as LIMO; intranet users</td><td>Usage right x academic year</td><td>Number of active users / subscriptions</td></tr><tr><td>Toledo</td><td>Electronic learning environment; students, teaching staff, administrators</td><td>Access x academic year</td><td>Enrolled courses, students, teaching staff</td></tr><tr><td>Use of applications</td><td>Applications such as Office 365, Maple</td><td>License x academic year</td><td>Number of licensed users</td></tr><tr><td>Computer support</td><td>Support of student/staff computer infrastructure</td><td>Year</td><td>Number of supported users/devices</td></tr><tr><td>Network storage</td><td>Windows network drives</td><td>Fixed storage amount for one academic year</td><td>Number of accounts; student max 100 GB; staff unlimited</td></tr><tr><td>Printing</td><td>Network printer variants: one-sided, two-sided, black-white, color, A4/A3, exam combinations</td><td>Page</td><td>Number of printed pages, exam weeks, prepaid student printing</td></tr></table>`, a:"A strong answer selects units that measure service consumption rather than internal resources: access x academic year for administrative apps, usage right/access x academic year for e-library and Toledo, license x academic year for applications, year or supported user-year for computer support, account/storage-year or fixed storage amount per academic year for network storage, and page for printing. Drivers include number of students/staff, enrolled courses, applications/licenses, supported devices, accounts, storage entitlement, invoice/printing processes, and exam periods. The answer should explain why service units must be understandable, measurable, and related to user value.", rubric:["Uses at least five services from the table","Chooses service units, not internal resource names","Identifies consumption drivers or business processes","Explains why the units are suitable"]},
+      {c:"13", t:"Exercise Material Essay", q:"EN: Use the KU Leuven service catalog material. Choose suitable service units for at least five services, then identify business processes or parameters that drive consumption volume.", material:`<h3>Exercise material · KU Leuven IT services</h3><a class="material-link" href="itm-material-images/ku-leuven-service-material.png" target="_blank" rel="noopener">打开原题图 / Open original figure</a><table class="mini-table"><tr><th>Service</th><th>Description / users</th><th>Suggested service unit</th><th>Driver examples</th></tr><tr><td>Administrative applications</td><td>KU Loket, course schedules, room reservation; students, academic staff, administration</td><td>Access x academic year</td><td>Number of students/staff needing access</td></tr><tr><td>E-library access</td><td>Electronic library resources such as LIMO; intranet users</td><td>Usage right x academic year</td><td>Number of active users / subscriptions</td></tr><tr><td>Toledo</td><td>Electronic learning environment; students, teaching staff, administrators</td><td>Access x academic year</td><td>Enrolled courses, students, teaching staff</td></tr><tr><td>Use of applications</td><td>Applications such as Office 365, Maple</td><td>License x academic year</td><td>Number of licensed users</td></tr><tr><td>Computer support</td><td>Support of student/staff computer infrastructure</td><td>Year</td><td>Number of supported users/devices</td></tr><tr><td>Network storage</td><td>Windows network drives</td><td>Fixed storage amount for one academic year</td><td>Number of accounts; student max 100 GB; staff unlimited</td></tr><tr><td>Printing</td><td>Network printer variants: one-sided, two-sided, black-white, color, A4/A3, exam combinations</td><td>Page</td><td>Number of printed pages, exam weeks, prepaid student printing</td></tr></table>`, a:"A strong answer selects units that measure service consumption rather than internal resources: access x academic year for administrative apps, usage right/access x academic year for e-library and Toledo, license x academic year for applications, year or supported user-year for computer support, account/storage-year or fixed storage amount per academic year for network storage, and page for printing. Drivers include number of students/staff, enrolled courses, applications/licenses, supported devices, accounts, storage entitlement, invoice/printing processes, and exam periods. The answer should explain why service units must be understandable, measurable, and related to user value.", rubric:["Uses at least five services from the table","Chooses service units, not internal resource names","Identifies consumption drivers or business processes","Explains why the units are suitable"]},
       {c:"13", t:"Book Essay", q:"EN: Compare outsourcing and cloud computing as sourcing options. Mention IaaS, PaaS, SaaS and typical decision criteria.", a:"Outsourcing delegates IT tasks/services to an external provider; cloud computing provides scalable services through cloud models. IaaS provides infrastructure; PaaS provides platform/runtime; SaaS provides complete applications. Decision criteria include competence, cost, scale, flexibility, control, security, sovereignty, integration, and dependency.", rubric:["Defines outsourcing","Defines cloud service models","Compares control/cost/flexibility/dependency","Uses IaaS/PaaS/SaaS correctly"]},
       {c:"13", t:"Book Essay", q:"EN: Compare ITIL, ISO/IEC 20000, IT4IT, and CMMI-SVC. Why are they not interchangeable?", a:"ITIL is a best-practice framework for IT service management. ISO/IEC 20000 is an auditable/certifiable service management system standard. IT4IT uses value streams and reference architecture for IT management. CMMI-SVC is an improvement/maturity model for services. They differ in purpose: guidance, certification, architecture/value stream, and maturity improvement.", rubric:["Expands or explains each acronym/framework","Distinguishes guidance vs certification","Mentions IT4IT value streams","Mentions CMMI-SVC maturity/improvement"]},
       {c:"14", t:"Book Essay", q:"EN: Explain the difference between service catalog, service request handling, and services planning. Use an out-of-catalog analytics platform as an example.", a:"The service catalog defines available services and requestable items. Service request handling receives, validates, authorizes, and fulfills requests. Services planning forecasts service consumption and required resources. An out-of-catalog analytics platform is not a simple request; it needs validation, planning, approval, resource analysis, and financial impact analysis.", rubric:["Defines service catalog","Defines request handling","Defines services planning","Handles out-of-catalog case correctly"]},
@@ -4188,10 +4349,10 @@
       {c:"16", t:"Book Essay", q:"EN: Explain standard, normal, and urgent changes. Why can installing a network printer be normal rather than standard?", a:"Standard changes are low-risk, routine, pre-approved models. Normal changes need assessment and approval. Urgent changes are expedited to prevent or restore major disruption and are reviewed afterward. Installing a network printer may affect shared network/server/print infrastructure, so it needs normal evaluation rather than being treated as a simple device task.", rubric:["Defines three change types","Mentions risk/pre-approval/urgency","Explains shared infrastructure impact","Applies to network printer"]},
       {c:"17", t:"Book Essay", q:"EN: What makes a service level or SLA acceptable? Rewrite a vague login-time SLA into a good one.", a:"A good service level is measurable, precise, period-based, service-oriented, and states a minimum quality requirement. It includes a measured parameter, threshold, percentage, and period. A good rewrite is: measured monthly, 95% of Intranet logins complete within 10 seconds. Technical router latency alone may be operational level, not customer-facing SLA.", rubric:["Lists acceptability criteria","Includes period/percentage/threshold/service parameter","Provides corrected login example","Distinguishes technical vs service-facing metric"]},
       {c:"17", t:"Calculation Essay", q:"EN: Explain how MTBF, MTTR, and availability are related. How do multiple required components affect availability?", a:"MTBF is mean time between failures; MTTR is mean time to repair. A simple approximation uses unavailability = MTTR/MTBF and availability = 1 - unavailability. If multiple components are required in series, combined availability is the product of component availabilities, so total availability is lower than each individual availability.", rubric:["Defines MTBF","Defines MTTR","Explains availability/unavailability relation","Explains serial component multiplication"]},
-      {c:"17", t:"Exercise Material Essay", q:"EN: Use the composite-system availability material. Calculate the complete system availability for the basic three-tier system and explain how hot standby changes the result.", material:`<h3>Exercise material · Availability of composite systems</h3><img class="material-image" src="itm-material-images/availability-composite-material.png" alt="Original exercise image: composite system availability with hot standby"><p>The information system has three required tiers: database tier, application tier, and presentation tier. All required tiers must be available for the system to be available.</p><table class="mini-table"><tr><th>Tier</th><th>Availability</th></tr><tr><td>Database tier</td><td>99.5%</td></tr><tr><td>Application tier</td><td>98.0%</td></tr><tr><td>Presentation tier</td><td>97.3%</td></tr></table><div class="formula">Basic series system: βs = βDB × βApp × βPres</div><p>Hot standby variant: there are two application-tier components in parallel. The application tier is unavailable only if both application components are unavailable.</p><div class="formula">Parallel application tier: 1 - βApp,Hot = (1 - βApp) × (1 - βApp)</div>`, a:"For the basic system, all three tiers are required, so multiply their availabilities: 99.5% x 98.0% x 97.3% = about 94.9%. With hot standby for the application tier, the application tier availability becomes 1 - (1 - 0.98)^2 = 99.96%. The complete system is then 99.5% x 99.96% x 97.3% = about 96.8%. The key reasoning is series components reduce availability, while parallel redundancy improves one tier's availability.", rubric:["Recognizes series multiplication","Computes basic availability around 94.9%","Computes hot standby application tier around 99.96%","Computes improved system availability around 96.8% and explains why"]},
+      {c:"17", t:"Exercise Material Essay", q:"EN: Use the composite-system availability material. Calculate the complete system availability for the basic three-tier system and explain how hot standby changes the result.", material:`<h3>Exercise material · Availability of composite systems</h3><a class="material-link" href="itm-material-images/availability-composite-material.png" target="_blank" rel="noopener">打开原题图 / Open original figure</a><p>The information system has three required tiers: database tier, application tier, and presentation tier. All required tiers must be available for the system to be available.</p><table class="mini-table"><tr><th>Tier</th><th>Availability</th></tr><tr><td>Database tier</td><td>99.5%</td></tr><tr><td>Application tier</td><td>98.0%</td></tr><tr><td>Presentation tier</td><td>97.3%</td></tr></table><div class="formula">Basic series system: βs = βDB × βApp × βPres</div><p>Hot standby variant: there are two application-tier components in parallel. The application tier is unavailable only if both application components are unavailable.</p><div class="formula">Parallel application tier: 1 - βApp,Hot = (1 - βApp) × (1 - βApp)</div>`, a:"For the basic system, all three tiers are required, so multiply their availabilities: 99.5% x 98.0% x 97.3% = about 94.9%. With hot standby for the application tier, the application tier availability becomes 1 - (1 - 0.98)^2 = 99.96%. The complete system is then 99.5% x 99.96% x 97.3% = about 96.8%. The key reasoning is series components reduce availability, while parallel redundancy improves one tier's availability.", rubric:["Recognizes series multiplication","Computes basic availability around 94.9%","Computes hot standby application tier around 99.96%","Computes improved system availability around 96.8% and explains why"]},
       {c:"18", t:"Book Essay", q:"EN: Explain supplier classification. How would you classify IBM/mainframe, toner, Cisco-like network equipment, and deep Microsoft platform dependency?", a:"Supplier classification depends on importance, risk, dependency, substitutability, and strategic relationship. IBM/mainframe or deeply integrated Microsoft platform can be strategic if business-critical and hard to replace. Toner is commodity because it is standardized and easy to replace. Cisco-like network equipment may be tactical/important infrastructure but usually more replaceable than a strategic partner.", rubric:["Names classification criteria","Classifies strategic supplier correctly","Classifies commodity supplier correctly","Handles tactical/operational nuance"]},
       {c:"19", t:"Book Essay", q:"EN: Explain major IT personnel roles and map activities to roles: service desk, system administrator, business architect, financial manager, CIO.", a:"Service desk is first contact for incidents, information questions, and service requests. System administrators configure accounts, rights, storage, systems and infrastructure. Business/enterprise architects translate business processes into data/application/infrastructure implications. Financial managers calculate and manage IT costs. CIO is overall IT department manager and links IT to organizational objectives.", rubric:["Explains at least five roles","Maps activities to roles","Distinguishes architecture vs support","Explains CIO responsibility"]},
-      {c:"19", t:"Exercise Material Essay", q:"EN: Use the IT department structure material. Assign the listed IT management processes to suitable IT subdepartments and explain any ambiguous cases.", material:`<h3>Exercise material · Assign processes to IT subdepartments</h3><img class="material-image" src="itm-material-images/it-department-process-material.png" alt="Original exercise image: IT department structure and process assignment"><p>Processes to assign: change handling, resources tracking, financial management, supplier management & procurement, HR management, event handling, incident handling, problem handling, request handling, service level agreements, service planning.</p><table class="mini-table"><tr><th>Subdepartment / function</th><th>Typical processes from the exercise figure</th></tr><tr><td>External to IT department</td><td>HR management can be external to IT, or treated as Management & Staff function in IT</td></tr><tr><td>Management & Staff functions</td><td>Financial management; HR management alternative</td></tr><tr><td>Strategy and Planning</td><td>Service planning; change handling; resources tracking; supplier management & procurement; service level agreements</td></tr><tr><td>Operations and Support</td><td>Request handling; incident handling; event handling; problem handling; service desk; daily operations; support</td></tr><tr><td>Development</td><td>Development teams; not the main home for incident/request/problem handling</td></tr></table>`, a:"A strong answer maps service planning, resources tracking, change handling, supplier management/procurement, and SLA definition/management mainly to Strategy and Planning or coordination/customer management roles. Financial management belongs to Management & Staff functions. HR management may be external to the IT department or an internal management/staff function. Request handling, incident handling, event handling, and problem handling belong mainly to Operations and Support/service desk/support. Development teams are not the normal owner of operational service management processes.", rubric:["Correctly maps operational handling processes to Operations and Support","Correctly maps planning/procurement/SLA work to Strategy and Planning or management roles","Handles HR ambiguity","Explains why Development is not the main owner of service desk processes"]},
+      {c:"19", t:"Exercise Material Essay", q:"EN: Use the IT department structure material. Assign the listed IT management processes to suitable IT subdepartments and explain any ambiguous cases.", material:`<h3>Exercise material · Assign processes to IT subdepartments</h3><a class="material-link" href="itm-material-images/it-department-process-material.png" target="_blank" rel="noopener">打开原题图 / Open original figure</a><p>Processes to assign: change handling, resources tracking, financial management, supplier management & procurement, HR management, event handling, incident handling, problem handling, request handling, service level agreements, service planning.</p><table class="mini-table"><tr><th>Subdepartment / function</th><th>Typical processes from the exercise figure</th></tr><tr><td>External to IT department</td><td>HR management can be external to IT, or treated as Management & Staff function in IT</td></tr><tr><td>Management & Staff functions</td><td>Financial management; HR management alternative</td></tr><tr><td>Strategy and Planning</td><td>Service planning; change handling; resources tracking; supplier management & procurement; service level agreements</td></tr><tr><td>Operations and Support</td><td>Request handling; incident handling; event handling; problem handling; service desk; daily operations; support</td></tr><tr><td>Development</td><td>Development teams; not the main home for incident/request/problem handling</td></tr></table>`, a:"A strong answer maps service planning, resources tracking, change handling, supplier management/procurement, and SLA definition/management mainly to Strategy and Planning or coordination/customer management roles. Financial management belongs to Management & Staff functions. HR management may be external to the IT department or an internal management/staff function. Request handling, incident handling, event handling, and problem handling belong mainly to Operations and Support/service desk/support. Development teams are not the normal owner of operational service management processes.", rubric:["Correctly maps operational handling processes to Operations and Support","Correctly maps planning/procurement/SLA work to Strategy and Planning or management roles","Handles HR ambiguity","Explains why Development is not the main owner of service desk processes"]},
       {c:"20", t:"Book Essay", q:"EN: Explain IT governance using ISO/IEC 38500 and COBIT. How do governance and management differ?", a:"IT governance ensures IT supports business objectives and that the right decisions are made at organizational level. ISO/IEC 38500 emphasizes Evaluate, Direct, Monitor. COBIT means Control Objectives for Information and Related Technologies and includes goals cascade from stakeholder needs to enterprise goals, IT-related goals, and enabler/process goals. Governance evaluates/directs/monitors; management plans/builds/runs/monitors IT activities.", rubric:["Explains governance purpose","Mentions Evaluate/Direct/Monitor","Explains COBIT goals cascade","Distinguishes governance from management"]},
       {c:"20", t:"Case Essay", q:"EN: ProBranif has an IT steering committee with top management and IT managers but no user representatives. Explain the governance weakness and propose a better decision structure.", a:"The weakness is decision rights: application and benefit decisions require business/user input, otherwise IT may not align with real needs. Top management and IT managers are necessary but insufficient. A better structure includes top management, CIO/IT managers, and user representatives/divisional reps for application/investment decisions, while technical architecture/infrastructure details remain led by IT specialists.", rubric:["Identifies missing user/business representation","Explains why it is governance, not HR","Separates application decisions from technical decisions","Proposes balanced committee/workgroups"]},
       {c:"20", t:"Case Essay", q:"EN: Explain how to choose between corporate overhead, charge-out, business-unit funding, and hybrid IT funding. Apply it to Lidl, Bol.com, and Philips.", a:"Corporate overhead fits simple/support IT where detailed billing is costly. Charge-out fits measurable consumption and cost accountability. Business-unit funding fits division-specific strategic initiatives. Hybrid combines shared central services and local/BU-specific funding. Lidl store-level measurable retail IT supports charge-out; Bol.com operational systems may use charge-out/accountability and informational systems need investment; Philips as multinational fits hybrid.", rubric:["Explains each funding mechanism","Uses measurability/accountability/complexity","Applies Lidl","Applies Bol.com/Philips"]},
@@ -4199,6 +4360,40 @@
       {c:"21", t:"Case Essay", q:"EN: For KBC, Bol.com, Barry Callebaut, FOD Finance, Lidl, and Philips, explain how clue words in the case lead to focus point or alignment recommendations.", a:"A strong answer avoids company-name stereotypes and reads clue words. KBC: trust, digital channels, banking service -> customer focus/technology transformation/strategic IT. Bol.com: online marketplace, recommendations, digital revenue -> strategic mode/competitive potential/customer focus. Barry Callebaut: high-quality products and innovation -> product focus; manufacturing efficiency wording -> operational focus. FOD Finance: citizen online tax services -> customer focus; tax control wording -> financial focus. Lidl: cost-driven retail/store accountability -> financial/operational and charge-out. Philips: multinational, shared central IT plus division projects -> hybrid funding; innovation/health-tech may point product focus.", rubric:["Uses clue words, not stereotypes","Classifies multiple organizations","Distinguishes focus/Grid/SAM/funding","Explains ambiguous cases"]},
       {c:"21", t:"Book Essay", q:"EN: Explain the four operating models from Ross et al. using process standardization and integration.", a:"Operating model uses two dimensions: process standardization and process/data integration. Diversification is low standardization and low integration. Replication is high standardization but lower integration. Coordination is high integration with lower standardization. Unification is high standardization and high integration. The model influences enterprise architecture.", rubric:["Names two dimensions","Defines four quadrants","Connects to enterprise architecture","Gives example or clue for each"]}
     ];
+
+    const advancedEssayCore = [
+      {c:"2", t:"Hard Exam Essay", q:"EN: A logistics company implements real-time tracking. Explain how the same system can create operational, tactical, and strategic benefits depending on use.", a:"A strong answer classifies benefits by business effect, not by the technology name. Operationally, real-time tracking reduces manual status calls, speeds warehouse work, and lowers errors. Tactically, managers can monitor delivery performance and reallocate capacity using better information. Strategically, the company may sell premium visibility services or differentiate on reliable delivery. The same information system can therefore move from efficiency support to competitive positioning if capabilities and business model change.", rubric:["Classifies by effect rather than system name","Gives operational efficiency example","Gives tactical management/control example","Explains strategic differentiation or business model change"]},
+      {c:"3", t:"Hard Exam Essay", q:"EN: A CRM project failed although the software was delivered. Sales processes were unchanged, data ownership was unclear, and reports were not trusted. Diagnose the failure using the information systems framework.", a:"The failure is not simply an application failure. The application domain was delivered, but the business process domain was not redesigned, the data domain lacked clear ownership/quality, and governance did not ensure alignment with sales work. Infrastructure may be adequate, but benefits require fit across business process, data, application, and infrastructure. A better answer proposes process redesign, master-data responsibility, user involvement, and governance decisions on reporting value.", rubric:["Uses the four domains","Explains application-only thinking","Mentions data ownership/quality","Proposes governance/user/process fixes"]},
+      {c:"13", t:"Hard Exam Essay", q:"EN: A university wants to charge IT services fairly. Compare service units for Toledo access, storage, printing, and software licenses, and explain the risk of choosing the wrong unit.", a:"Toledo access can use access per academic year or active user per academic year because value is linked to enrolled students and staff. Storage should use GB-month or quota per period if capacity drives cost. Printing should use printed page, possibly differentiated by color/format, because cost follows volume. Software can use license per user per year. A wrong unit hides consumption, makes forecasting weak, creates unfair charge-out, and discourages cost-aware behavior.", rubric:["Chooses suitable units for at least four services","Distinguishes subscription and volume units","Links units to cost/consumption drivers","Explains fairness and forecasting risk"]},
+      {c:"14", t:"Hard Exam Essay", q:"EN: A business unit requests a new analytics platform not listed in the service catalog. Explain the service request handling path and what must be checked before approval.", a:"The request must first be registered and validated: is the requestor identified, authorized, and is the requested service in the catalog? Because the platform is out of catalog and complex, it should go to the IT services manager or project-style handling rather than immediate service desk fulfillment. The assessment should check urgency, required resources, delivery lead time, integration/security/privacy issues, and financial consequences for both the customer and IT department. Approval requires authorization to use the service, bear customer costs, and spend IT resources.", rubric:["Starts with registration/validation","Recognizes out-of-catalog complexity","Lists resources/lead time/financial checks","Mentions authorization conditions"]},
+      {c:"15", t:"Hard Exam Essay", q:"EN: A project has positive NPV but creates high vendor lock-in and compliance risk. Explain how NPV should and should not be used in the decision.", a:"NPV is useful because it discounts future net cash flows and shows whether expected financial benefits exceed costs under a chosen discount rate. Positive NPV supports the business case but does not automatically decide the investment. Vendor lock-in, compliance risk, strategic fit, service quality, and operational dependency may change the decision. A good answer states that financial evaluation is one decision input and should be combined with risk, governance, and alignment considerations.", rubric:["Explains NPV correctly","Interprets positive NPV","States limits of financial metrics","Adds risk/governance/alignment considerations"]},
+      {c:"16", t:"Hard Exam Essay", q:"EN: A recurring Friday capacity alert sometimes becomes a user outage. Explain how event handling, incident handling, problem handling, and change management interact.", a:"The capacity alert is an event and can be used as problem detection if thresholds are repeatedly exceeded. When users experience interruption or degradation, incident handling restores service quickly. Problem handling investigates the underlying persistent cause, such as insufficient capacity or a batch job design issue. The permanent fix normally requires change management, with assessment, testing, approval, and possibly a back-out plan. The answer should separate restoration from root-cause removal.", rubric:["Defines event/incident/problem","Uses threshold event as problem detection","Separates restore from root cause","Connects permanent fix to change management"]},
+      {c:"17", t:"Hard Exam Essay", q:"EN: A proposed SLA says: 'the database server is available 99.9% each month'. Critique it and rewrite a better service-facing SLA.", a:"The proposed SLA is measurable, but it is infrastructure-focused rather than service-facing. Users usually care whether the business service or application can be used, not whether one server is up. A better SLA includes period, percentage, measured service parameter, and threshold, for example: measured monthly, the online registration service is available to authorized users 99.5% of scheduled service hours, excluding planned maintenance. The answer should mention that technical metrics can support internal operational level agreements.", rubric:["Recognizes measurable but weak SLA","Explains service-facing requirement","Provides period/percentage/threshold rewrite","Mentions internal technical metrics/OLA"]},
+      {c:"18", t:"Hard Exam Essay", q:"EN: Classify four suppliers: core ERP cloud provider, toner vendor, one-time security audit firm, and network equipment provider. Explain criteria, not only labels.", a:"Supplier classification depends on business importance, risk, dependency, substitutability, and relationship depth. A core ERP cloud provider may be strategic if lock-in is high and replacement is difficult. A toner vendor is commodity because products are standardized and easy to replace. A one-time security audit firm is often tactical: important expertise but limited long-term integration. A network equipment provider can be tactical or strategic depending on dependency and uniqueness. Labels must be justified by criteria.", rubric:["Names classification criteria","Classifies ERP/cloud dependency carefully","Explains toner as commodity","Handles tactical ambiguity"]},
+      {c:"19", t:"Hard Exam Essay", q:"EN: An IT department has service desk, operations, development, architecture, financial management, supplier management, and CIO roles. Map password reset, recurring outage, new workflow design, budget creation, and vendor contract negotiation.", a:"Password reset is handled by the service desk or operations as a standard request. A recurring outage starts with incident restoration but should move to problem handling in operations/support. New workflow design involves business analysis/architecture and possibly development. Budget creation belongs to financial management. Vendor contract negotiation belongs to supplier management/procurement. The CIO is responsible for overall direction and alignment, not for personally executing every operational task.", rubric:["Maps at least five activities","Separates service desk/operations/problem","Separates architecture/development","Maps finance/supplier/CIO correctly"]},
+      {c:"20", t:"Hard Exam Essay", q:"EN: A firm wants faster innovation but its IT steering committee contains only IT managers. Use COBIT and governance decision rights to explain the weakness and redesign the structure.", a:"The business need should be translated through a goals cascade: stakeholder need for innovation to enterprise goals, IT-related goals, and enabler/process goals. A committee with only IT managers lacks business decision rights for application value, investment priorities, and benefit realization. A better structure includes top management, CIO/IT management, business-unit representatives, users or process owners, and separate technical architecture input where needed. Governance should evaluate, direct, and monitor; management then plans, builds, and runs the IT activities.", rubric:["Uses COBIT goals cascade","Identifies missing business/user representation","Redesigns decision structure","Distinguishes governance and management"]},
+      {c:"21", t:"Hard Exam Essay", q:"EN: A case gives KBC, Bol.com, Barry Callebaut, FOD Finance, Lidl, and Philips. Explain how to avoid confusing Strategic Impact Grid, SAM, strategic focus points, and operating model when answering.", a:"A strong answer first identifies which model the question asks for. Strategic Impact Grid uses current operational dependence and future strategic importance of IT. Strategic Alignment Model asks how business strategy, IT strategy, organizational infrastructure, and IT infrastructure align through perspectives such as strategy execution or competitive potential. Strategic focus points ask whether the business emphasizes financial, operational, product, or customer focus. Operating model asks about process standardization and integration. Company names are not enough; clue words such as trust, product innovation, process efficiency, tax control, or shared data determine the answer.", rubric:["Defines each model's dimension","Warns against company-name stereotypes","Uses clue words","Applies to multiple organizations"]},
+      {c:"21", t:"Hard Exam Essay", q:"EN: A company has standardized store processes, local customer data, and aggregated reporting. Later it wants shared customer data for cross-selling while stores remain autonomous. Explain the operating-model shift and architecture implication.", a:"The initial situation resembles Replication: high process standardization across stores but lower data/process integration. The move toward shared customer data increases integration while autonomy may remain, creating pressure toward Coordination. The architecture implication is stronger data standards, shared master data, integration mechanisms, and governance over customer information without necessarily making every local process identical. The answer should distinguish operating model from Strategic Impact Grid or SAM.", rubric:["Identifies Replication first","Explains shift toward Coordination","Mentions shared data/integration architecture","Avoids confusing operating model with other Chapter 21 models"]}
+    ];
+
+    essayCore.push(...advancedEssayCore);
+
+    const calculationEssayDrills = [
+      {c:"13", t:"Hard Calculation Essay", q:"EN: Under Grosch's law, capacity x4 costs about sqrt(4) times the base system. Option A buys all capacity x4 now. Option B buys capacity x2 now and another capacity x2 next year after a 30% price decrease. Compare the total acquisition cost index and explain the IT management decision.", a:"Option A costs sqrt(4) = 2.00 cost units for four times the capacity. Option B costs sqrt(2) now plus 70% of sqrt(2) next year: 1.414 + 0.70 x 1.414 = about 2.404 cost units. Purely on acquisition cost, buying the larger system now is cheaper in this simplified Grosch-law model. However, the decision should also consider demand uncertainty, financing, risk of unused capacity, and technology change.", rubric:["Calculates Option A correctly","Calculates staged Option B correctly","Compares cost indices","Explains management trade-off beyond the number"]},
+      {c:"13", t:"Hard Calculation Essay", q:"EN: A university currently prints 300,000 pages per year. Student numbers are expected to increase by 10%, but digital exams are expected to reduce pages per student by 25%. Forecast next year's print volume and explain why this matters for service planning.", a:"The forecast volume is 300,000 x 1.10 x 0.75 = 247,500 pages. Although the business driver student count increases, the service-specific driver pages per student decreases more strongly. Service planning should therefore not simply add 10% capacity. The IT department should plan printing, supplies, charge-out, and support using the service volume driver rather than the general business volume alone.", rubric:["Uses both growth and reduction factors","Calculates 247,500 pages","Explains service-specific volume driver","Connects result to planning/costing"]},
+      {c:"15", t:"Hard Calculation Essay", q:"EN: A service has direct costs of 120,000 and allocated indirect costs of 30,000. Planned volume is 5,000 service units. Actual cost becomes 168,000 and actual volume becomes 6,000 units. Calculate the standard unit price, actual unit cost, and interpret the result for charge-out.", a:"The planned full cost is 120,000 + 30,000 = 150,000, so the standard unit price is 150,000 / 5,000 = 30 per unit. The actual unit cost is 168,000 / 6,000 = 28 per unit. Total cost is higher than planned, but unit cost is lower because volume increased. For charge-out, this shows why the organization must decide whether to bill using standard prices for predictability or actual costs for cost recovery.", rubric:["Calculates planned full cost","Calculates standard unit price","Calculates actual unit cost","Interprets total cost versus unit cost"]},
+      {c:"15", t:"Hard Calculation Essay", q:"EN: Two engineers support the printing service. Engineer A costs 52,000 per year and spends 10 of 40 weekly hours on printing. Engineer B costs 64,000 per year and spends 5 of 40 weekly hours on printing. Non-personnel printing cost is 20,000 and annual volume is 250,000 pages. Calculate allocated personnel cost and cost per printed page.", a:"Engineer A allocation is 52,000 x 10/40 = 13,000. Engineer B allocation is 64,000 x 5/40 = 8,000. Total allocated personnel cost is 21,000. Full printing cost is 21,000 + 20,000 = 41,000. Cost per printed page is 41,000 / 250,000 = 0.164, or 16.4 cents per page. A strong answer also notes that allocation keys should be understandable and consistently applied.", rubric:["Allocates Engineer A correctly","Allocates Engineer B correctly","Adds personnel and non-personnel cost","Calculates cost per page and comments on allocation key"]},
+      {c:"15", t:"Hard Calculation Essay", q:"EN: A project requires an initial investment of 250,000. It creates annual gross benefits of 110,000 for three years. Maintenance cost is 20,000 in year 1 and grows by 5% per year. Discount rate is 8%. Calculate the approximate NPV and state whether the financial case is positive.", a:"Net cash flow in year 1 is 110,000 - 20,000 = 90,000. Year 2 maintenance is 21,000, so net cash flow is 89,000. Year 3 maintenance is 22,050, so net cash flow is 87,950. Present values at 8% are about 83,333, 76,303, and 69,814, totaling about 229,450. NPV is about 229,450 - 250,000 = -20,550, so the financial case is negative under these assumptions.", rubric:["Calculates yearly maintenance correctly","Calculates net cash flows","Discounts each year approximately","Interprets negative NPV"]},
+      {c:"15", t:"Hard Calculation Essay", q:"EN: Project A has NPV +30,000 but high compliance uncertainty. Project B has NPV +12,000 and is mandatory for regulatory compliance. Explain how an exam answer should use the NPV result without making a wrong recommendation.", a:"The NPV comparison shows that Project A has the higher expected financial value, but NPV is not the only decision criterion. Project B may need to be selected or prioritized because mandatory compliance can override a lower NPV. Project A's compliance uncertainty should be treated as risk and may require mitigation, delay, or a revised business case. The correct exam logic is: calculate and interpret financial value, then combine it with risk, compliance, strategy, and governance judgment.", rubric:["States A has higher NPV","Explains mandatory compliance can dominate","Treats uncertainty as risk","Avoids choosing only by highest NPV"]},
+      {c:"17", t:"Hard Calculation Essay", q:"EN: A service has three serial components: web server 99.8%, application server 98.5%, and database 99.7%. Calculate service availability. Then recalculate if the application tier is replaced by two independent parallel application servers, each 98.5%.", a:"For serial components, availability is 0.998 x 0.985 x 0.997 = about 0.9801, or 98.01%. With two independent parallel application servers, application-tier unavailability is 0.015 x 0.015 = 0.000225, so application-tier availability is 99.9775%. Overall availability becomes 0.998 x 0.999775 x 0.997 = about 0.9948, or 99.48%. The case shows that removing a weak serial component can strongly improve service availability.", rubric:["Calculates serial availability","Calculates parallel app-tier availability","Calculates improved overall availability","Explains why architecture matters"]},
+      {c:"17", t:"Hard Calculation Essay", q:"EN: A business asks to raise monthly availability from 99.5% to 99.9% for a 30-day month. Calculate allowed downtime under both targets and explain what the IT manager should discuss before accepting the new SLA.", a:"A 30-day month has 720 hours. At 99.5% availability, allowed downtime is 0.5% x 720 = 3.6 hours. At 99.9%, allowed downtime is 0.1% x 720 = 0.72 hours, or 43.2 minutes. The reduction is 2.88 hours, or 172.8 minutes. Before accepting, the IT manager should discuss cost, architecture changes, monitoring, planned maintenance exclusions, measurement method, and whether the higher level matches business value.", rubric:["Calculates 99.5% downtime","Calculates 99.9% downtime","Calculates reduction","Discusses SLA cost/measurement/business value"]},
+      {c:"17", t:"Hard Calculation Essay", q:"EN: A storage service has 400 disks. Each disk has MTBF 800,000 hours. Any disk failure counts as a service incident, and average repair time is 3 hours. Estimate the service-level MTBF and availability, assuming independent failures and no redundancy effect.", a:"If any disk failure counts, service-level failure rate is 400 / 800,000 per hour, so service-level MTBF is 800,000 / 400 = 2,000 hours. With MTTR 3 hours, approximate availability is MTBF / (MTBF + MTTR) = 2,000 / 2,003 = about 99.85%. This is a simplified calculation because real storage architecture may include redundancy, hot spares, and different definitions of service impact.", rubric:["Calculates service-level MTBF","Uses MTBF/(MTBF+MTTR)","Calculates about 99.85%","States simplification/architecture caveat"]},
+      {c:"20", t:"Hard Calculation Essay", q:"EN: An IT department allocates a 180,000 shared service desk cost using number of tickets. Business Unit A has 900 tickets, B has 600 tickets, and C has 300 tickets. Calculate each allocation. Then explain one fairness weakness of this allocation key.", a:"Total tickets are 900 + 600 + 300 = 1,800. A receives 900/1,800 x 180,000 = 90,000. B receives 600/1,800 x 180,000 = 60,000. C receives 300/1,800 x 180,000 = 30,000. The key is understandable and usage-related, but it may be unfair if ticket complexity differs strongly or if better self-service reduces tickets without reducing fixed service desk capacity.", rubric:["Calculates total tickets","Allocates A/B/C correctly","Explains why ticket key is understandable","Identifies a fairness weakness"]},
+      {c:"21", t:"Hard Calculation Essay", q:"EN: A company scores two IT initiatives on business impact and IT feasibility from 1 to 5. Initiative X has impact 5 and feasibility 2. Initiative Y has impact 3 and feasibility 5. Using impact x feasibility as a simple prioritization score, compare them and explain why this score is not enough for alignment decisions.", a:"Initiative X scores 5 x 2 = 10. Initiative Y scores 3 x 5 = 15, so the simple score favors Y. However, alignment decisions should not depend only on a simple multiplication score. X may be strategically critical even if feasibility is low, while Y may be easy but less relevant to future positioning. The decision should consider strategic impact grid logic, business strategy, risk, dependencies, timing, and governance decision rights.", rubric:["Calculates X score","Calculates Y score","Identifies which score is higher","Explains limits of simple scoring for alignment"]},
+      {c:"21", t:"Hard Calculation Essay", q:"EN: A retailer has 80 stores. A standard POS change costs 1,000 per store if done locally. A central standardized rollout costs 35,000 fixed plus 400 per store. Calculate both options and explain the operating-model implication.", a:"Local rollout costs 80 x 1,000 = 80,000. Central standardized rollout costs 35,000 + 80 x 400 = 35,000 + 32,000 = 67,000. The central rollout is cheaper by 13,000 in this case. The operating-model implication is that standardization can reduce variable cost and improve consistency, but it also requires central governance, common processes, and coordination with stores.", rubric:["Calculates local rollout cost","Calculates central rollout cost","Compares savings","Connects result to standardization/governance"]}
+    ];
+
+    essayCore.push(...calculationEssayDrills);
 
     function splitSourceEssay(question, answer) {
       const rawQuestion = String(question || "").replace(/\s+/g, " ").trim();
@@ -5073,18 +5268,21 @@
     state.retain ||= {};
     state.retake ||= {};
     state.sidebarCollapsed ||= false;
+    state.hideDone ||= false;
+    state.itemAI ||= {};
     const sessionSeen = {quiz: new Set(), cloze: new Set(), essay: new Set()};
 
     const $ = (id) => document.getElementById(id);
     $("mode").value = state.mode;
     $("search").value = state.search;
+    $("hideDone").checked = Boolean(state.hideDone);
     const savedApiKey = localStorage.getItem(apiKeyStoreKey) || "";
     const savedModel = localStorage.getItem(modelStoreKey) || "gpt-5.5";
-    ["globalApiKey", "apiKey"].forEach(id => {
+    ["globalApiKey", "apiKey", "essayInlineApiKey"].forEach(id => {
       const input = $(id);
       if (input) input.value = savedApiKey;
     });
-    ["globalModel", "aiModel"].forEach(id => {
+    ["globalModel", "aiModel", "essayInlineModel"].forEach(id => {
       const select = $(id);
       if (select && [...select.options].some(option => option.value === savedModel)) select.value = savedModel;
     });
@@ -5099,6 +5297,7 @@
           view: state.view,
           chapter: state.chapter,
           mode: state.mode,
+          hideDone: state.hideDone,
           search: state.search,
           cardIndex: state.cardIndex,
           quizIndex: state.quizIndex,
@@ -5174,6 +5373,7 @@
       Object.assign(state, nextState);
       $("mode").value = state.mode || "all";
       $("search").value = state.search || "";
+      $("hideDone").checked = Boolean(state.hideDone);
       save();
       render();
     }
@@ -5515,6 +5715,19 @@
       ].some(key => text.includes(key));
     }
 
+    function isCalculationEssay(item) {
+      const text = norm(`${item.t} ${item.q} ${item.a || ""} ${(item.rubric || []).join(" ")}`);
+      const tag = norm(item.t || "");
+      if (tag.includes("calculation essay")) return true;
+      const hasNumber = /\d/.test(text);
+      return hasNumber && [
+        "npv", "discount rate", "cash flow", "unit cost", "cost per",
+        "allocated", "charge-out", "service unit", "planned volume", "actual volume",
+        "forecast", "availability", "downtime", "mtbf", "mttr", "unavailability",
+        "grosch", "sqrt", "capacity", "score", "fixed", "per store"
+      ].some(key => text.includes(key));
+    }
+
     function filtered(list, type) {
       const term = norm($("search").value.trim());
       const mode = $("mode").value;
@@ -5522,7 +5735,9 @@
       if (state.chapter !== "all") out = out.filter(item => item.c === state.chapter);
       if (term) out = out.filter(item => norm(`${item.q} ${item.a || ""} ${item.e || ""} ${item.t} ${(item.answers || []).join(" ")} ${sourceFor(item, type)}`).includes(term));
       if (mode === "calc") {
-        out = type === "quiz" ? out.filter(isCalculationQuiz) : [];
+        if (type === "quiz") out = out.filter(isCalculationQuiz);
+        else if (type === "essay") out = out.filter(isCalculationEssay);
+        else out = [];
       }
       if (mode === "hard") {
         out = out.filter(item => norm(item.t).includes("hard"));
@@ -5531,6 +5746,13 @@
         out = out.filter(item => type === "card" ? state.weak[item.id] : state[type]?.[item.id]?.wrong);
       }
       if (mode === "unseen") {
+        const retainId = state.retain?.[type];
+        out = out.filter(item => {
+          if (item.id === retainId) return true;
+          return !hasMeaningfulRecord(type, item);
+        });
+      }
+      if (state.hideDone && mode !== "unseen" && mode !== "weak") {
         const retainId = state.retain?.[type];
         out = out.filter(item => {
           if (item.id === retainId) return true;
@@ -5790,6 +6012,196 @@
       }
     }
 
+    function currentCardItem() {
+      const list = filtered(cards, "card");
+      if (!list.length) return null;
+      state.cardIndex = Math.max(0, Math.min(state.cardIndex, list.length - 1));
+      return list[state.cardIndex];
+    }
+
+    function currentItemForType(type) {
+      if (type === "card") return currentCardItem();
+      if (type === "quiz") return currentQuizItem();
+      if (type === "cloze") return currentCloze().item;
+      return null;
+    }
+
+    function itemAiBoxId(type) {
+      return type === "card" ? "cardAiExplain" : type === "quiz" ? "quizAiExplain" : "clozeAiExplain";
+    }
+
+    function itemAiButtonId(type) {
+      return type === "card" ? "aiExplainCard" : type === "quiz" ? "aiExplainQuiz" : "aiExplainCloze";
+    }
+
+    function itemAiRecordKey(type, item) {
+      return `${type}:${item.id || itemKey(type, item)}`;
+    }
+
+    function itemAiContext(type, item) {
+      if (type === "quiz") {
+        const record = state.quiz[item.id] || {};
+        const chosen = Number.isInteger(record.choice) ? item.o[record.choice] : "(not answered yet)";
+        const correct = item.o[item.a];
+        return `Chosen answer: ${chosen}\nCorrect answer: ${correct}`;
+      }
+      if (type === "cloze") {
+        const record = state.cloze[item.id] || {};
+        return `Student answer: ${record.answer || "(not answered yet)"}\nAccepted answer: ${(item.answers || []).join(" / ")}`;
+      }
+      return `Flashcard answer: ${item.a}`;
+    }
+
+    function itemAiCacheKey(type, item, model) {
+      return stableHash(`${type}|${item.id || itemKey(type, item)}|${model}|${itemAiContext(type, item)}`);
+    }
+
+    function localItemExplanation(type, item) {
+      if (type === "quiz") {
+        return [
+          "本地简版解析 / Local explanation",
+          `正确答案：${item.o[item.a]}`,
+          `核心逻辑：${item.e || "这题主要考概念区分和题干关键词。"}`,
+          `题干关键词：${extractAnswerTerms(`${item.q} ${item.e || ""} ${item.o[item.a]}`).join(" / ") || item.t}`,
+          "想要更细的逐项解析，请填 API key 后再点一次。"
+        ].join("\n\n");
+      }
+      if (type === "cloze") {
+        return [
+          "本地简版解析 / Local explanation",
+          `答案：${(item.answers || []).join(" / ")}`,
+          `核心逻辑：${item.e || "这题主要考英文关键词能不能准确回忆。"}`,
+          "复习方法：先背英文 term，再用中文确认含义，最后回到英文句子里复述。",
+          "想要更细的逐项解析，请填 API key 后再点一次。"
+        ].join("\n\n");
+      }
+      return [
+        "本地简版解析 / Local explanation",
+        `参考答案：${item.a}`,
+        `关键词：${extractAnswerTerms(`${item.q} ${item.a}`).join(" / ") || item.t}`,
+        "复习方法：先用 1 句话定义，再补 1 个 distinction / example / exam cue。",
+        "想要更细的逐项解析，请填 API key 后再点一次。"
+      ].join("\n\n");
+    }
+
+    function itemExplainPrompt(type, item) {
+      const base = [
+        "You are a strict bilingual ICT Service Management exam tutor.",
+        "Explain this single practice item in Chinese, but preserve important English course terms.",
+        "Be concrete and exam-oriented. Do not give generic encouragement.",
+        "Return plain text only. Do not use Markdown headings, asterisks, hashtags, or decorative bullets.",
+        "",
+        `Item type: ${type}`,
+        `Chapter: ${item.c}`,
+        `Topic tag: ${item.t}`,
+        `Question: ${item.q}`,
+        `Source note: ${sourceFor(item, type)}`
+      ];
+      if (type === "quiz") {
+        base.push(
+          "",
+          "Options:",
+          ...item.o.map((option, index) => `${index === item.a ? "Correct" : "Distractor"} option ${String.fromCharCode(65 + index)}: ${option}`),
+          "",
+          itemAiContext(type, item),
+          "",
+          `Existing explanation: ${item.e || "(none)"}`,
+          "",
+          "Output sections:",
+          "1. Correct logic: explain why the correct option is correct.",
+          "2. Trap analysis: explain why the wrong options are tempting but wrong.",
+          "3. Exam keywords: list the exact words in the question that should trigger the correct concept.",
+          "4. One-sentence memory hook: give one short Chinese memory trick and one reusable English sentence."
+        );
+      } else if (type === "cloze") {
+        base.push(
+          "",
+          itemAiContext(type, item),
+          "",
+          `Existing explanation: ${item.e || "(none)"}`,
+          "",
+          "Output sections:",
+          "1. Meaning: explain the missing English term.",
+          "2. Why this answer fits the blank: connect grammar and course meaning.",
+          "3. Common confusion: name nearby terms that are easy to mix up.",
+          "4. Memory hook: give a Chinese mnemonic and one English sentence using the term."
+        );
+      } else {
+        base.push(
+          "",
+          itemAiContext(type, item),
+          "",
+          "Output sections:",
+          "1. Core meaning: explain the concept in Chinese with key English terms.",
+          "2. Exam use: explain how this idea appears in MCQ or essay questions.",
+          "3. Common trap: what students often confuse it with.",
+          "4. Memory hook: give a short structure for memorizing the answer."
+        );
+      }
+      return base.join("\n");
+    }
+
+    function renderItemAiBox(type, item) {
+      const box = $(itemAiBoxId(type));
+      if (!box || !item) return;
+      const record = state.itemAI[itemAiRecordKey(type, item)];
+      box.hidden = !record?.text;
+      box.innerHTML = record?.text ? formattedReviewHtml(record.text) : "";
+    }
+
+    async function explainCurrentItem(type) {
+      const item = currentItemForType(type);
+      if (!item) return;
+      const box = $(itemAiBoxId(type));
+      const button = $(itemAiButtonId(type));
+      const apiKey = $("globalApiKey").value.trim();
+      const model = $("globalModel").value;
+      const recordKey = itemAiRecordKey(type, item);
+      const cacheKey = itemAiCacheKey(type, item, model);
+      const previous = state.itemAI[recordKey];
+      if (previous?.cacheKey === cacheKey && previous?.text) {
+        box.hidden = false;
+        box.innerHTML = formattedReviewHtml(`${previous.text}\n\n缓存提示：本题内容和模型没有变化，已复用上次 AI 解析。`);
+        return;
+      }
+      if (!apiKey) {
+        state.itemAI[recordKey] = {text: localItemExplanation(type, item), cacheKey, model: "local", ts: new Date().toISOString()};
+        save();
+        renderItemAiBox(type, item);
+        setApiDrawer(true);
+        return;
+      }
+      box.hidden = false;
+      box.innerHTML = formattedReviewHtml("正在生成本题 AI 解析...");
+      button.disabled = true;
+      try {
+        const response = await fetch("https://api.openai.com/v1/responses", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify(responseRequestBody(model, itemExplainPrompt(type, item), 0.15))
+        });
+        const json = await response.json();
+        if (!response.ok) throw new Error(json.error?.message || `HTTP ${response.status}`);
+        const text = json.output_text || (json.output || [])
+          .flatMap(part => part.content || [])
+          .map(part => part.text || "")
+          .join("\n")
+          .trim();
+        state.itemAI[recordKey] = {text: text || localItemExplanation(type, item), cacheKey, model, ts: new Date().toISOString()};
+        save();
+        renderItemAiBox(type, item);
+      } catch (error) {
+        state.itemAI[recordKey] = {text: `${localItemExplanation(type, item)}\n\nAI 请求失败：${error.message}`, cacheKey, model: "local-fallback", ts: new Date().toISOString()};
+        save();
+        renderItemAiBox(type, item);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
     function renderCards() {
       const list = filtered(cards, "card");
       if (!list.length) {
@@ -5798,6 +6210,8 @@
         $("cardAnswer").textContent = "换一个章节、搜索词或练习范围试试。";
         $("cardAnswer").className = "answer";
         $("cardSource").innerHTML = "";
+        $("cardAiExplain").hidden = true;
+        $("cardAiExplain").innerHTML = "";
         $("cardList").innerHTML = `<div class="empty">当前筛选没有卡片</div>`;
         $("cardProgress").style.width = "0%";
         return;
@@ -5808,6 +6222,7 @@
       $("cardQuestion").innerHTML = annotatedText(item.q);
       $("cardAnswer").innerHTML = state.showAnswer ? annotatedText(item.a) : "点击“显示答案”后再判断自己是否掌握。";
       $("cardAnswer").className = state.showAnswer ? "answer" : "answer hidden";
+      renderItemAiBox("card", item);
       $("cardSource").innerHTML = `<strong>来源 / Source:</strong> ${sourceFor(item, "card")}`;
       $("cardProgress").style.width = `${(state.cardIndex + 1) / list.length * 100}%`;
       $("cardList").innerHTML = "";
@@ -5834,6 +6249,8 @@
         $("options").innerHTML = `<div class="empty">换一个章节、搜索词或练习范围试试。</div>`;
         $("explain").hidden = true;
         $("quizSource").innerHTML = "";
+        $("quizAiExplain").hidden = true;
+        $("quizAiExplain").innerHTML = "";
         $("quizProgress").style.width = "0%";
         return;
       }
@@ -5864,7 +6281,7 @@
           const previous = state.quiz[item.id] || {};
           const attempts = Number(previous.attempts || (previous.choice !== undefined ? 1 : 0)) + 1;
           state.quiz[item.id] = {choice: realIndex, correct: realIndex === item.a, wrong: realIndex !== item.a, attempts, ts: new Date().toISOString()};
-          if ($("mode").value === "unseen") state.retain.quiz = item.id;
+          if ($("mode").value === "unseen" || state.hideDone) state.retain.quiz = item.id;
           save();
           render();
         };
@@ -5872,9 +6289,10 @@
       });
       $("explain").hidden = !record;
       $("explain").innerHTML = record ? annotatedText(item.e) : "";
+      renderItemAiBox("quiz", item);
       $("quizSource").innerHTML = `<strong>来源 / Source:</strong> ${sourceFor(item, "quiz")}`;
       $("quizProgress").style.width = `${(state.quizIndex + 1) / list.length * 100}%`;
-      $("nextQuiz").textContent = $("mode").value === "unseen" ? "下一道未做" : "下一题";
+      $("nextQuiz").textContent = ($("mode").value === "unseen" || state.hideDone) ? "下一道未做" : "下一题";
     }
 
     function normalizeAnswer(value) {
@@ -5904,6 +6322,8 @@
         $("clozeResult").hidden = true;
         $("clozeExplain").hidden = true;
         $("clozeSource").innerHTML = "";
+        $("clozeAiExplain").hidden = true;
+        $("clozeAiExplain").innerHTML = "";
         $("clozeProgress").style.width = "0%";
         return;
       }
@@ -5919,6 +6339,7 @@
       $("clozeResult").innerHTML = record ? `${record.correct ? "Correct" : "Review"} · Your answer: <strong>${escapeHtml(record.answer || "(blank)")}</strong><div class="answer-key">Answer: ${annotatedText(item.answers[0])}</div>` : "";
       $("clozeExplain").hidden = !record;
       $("clozeExplain").innerHTML = record ? annotatedText(item.e) : "";
+      renderItemAiBox("cloze", item);
       $("clozeSource").innerHTML = `<strong>来源 / Source:</strong> ${sourceFor(item, "cloze")}`;
       $("clozeProgress").style.width = `${(state.clozeIndex + 1) / list.length * 100}%`;
     }
@@ -5933,7 +6354,7 @@
       if (state.retake.cloze === item.id) delete state.retake.cloze;
       sessionSeen.cloze.add(item.id);
       state.cloze[item.id] = {answer, correct, wrong: !correct, revealed: reveal, ts: new Date().toISOString()};
-      if ($("mode").value === "unseen") state.retain.cloze = item.id;
+      if ($("mode").value === "unseen" || state.hideDone) state.retain.cloze = item.id;
       save();
       render();
     }
@@ -6312,6 +6733,7 @@
       if (hasCachedEssayGrade(previous, cacheKey)) {
         sessionSeen.essay.add(item.id);
         if (state.retake.essay === item.id) delete state.retake.essay;
+        if (state.hideDone) state.retain.essay = item.id;
         $("essayStatus").textContent = "答案没有变化，已复用上次 AI 评分，未重新消耗 tokens。";
         save();
         renderEssay();
@@ -6321,6 +6743,7 @@
         sessionSeen.essay.add(item.id);
         if (state.retake.essay === item.id) delete state.retake.essay;
         state.essay[item.id] = {...previous, gradeCacheKey: cacheKey, gradeModel: model, ts: new Date().toISOString()};
+        if (state.hideDone) state.retain.essay = item.id;
         $("essayStatus").textContent = "答案没有变化，已复用旧版 AI 评分，并已建立缓存。";
         save();
         renderEssay();
@@ -6332,6 +6755,7 @@
         sessionSeen.essay.add(item.id);
         const attempts = Number(previous.attempts || (submittedEssayRecord(previous) ? 1 : 0)) + 1;
         state.essay[item.id] = {...previous, answer, feedback, modelAnswer: item.a, modelRubric: item.rubric || [], score: null, correct: false, wrong: true, attempts, draft: false, ts: new Date().toISOString()};
+        if (state.hideDone) state.retain.essay = item.id;
         $("essayStatus").textContent = "未填写 API key，已显示参考评分要点。";
         save();
         renderEssay();
@@ -6360,6 +6784,7 @@
         sessionSeen.essay.add(item.id);
         const attempts = Number(previous.attempts || (submittedEssayRecord(previous) ? 1 : 0)) + 1;
         state.essay[item.id] = {answer, feedback, score, correct: score !== null ? score >= 7 : false, wrong: score !== null ? score < 7 : false, attempts, draft: false, gradeCacheKey: cacheKey, gradeModel: model, ts: new Date().toISOString()};
+        if (state.hideDone) state.retain.essay = item.id;
         $("essayStatus").textContent = "评分完成。";
       } catch (error) {
         const feedback = `GPT 评分失败：${error.message}\n\n你可以先看右侧参考答案和中文版理解，并按右侧 Quick cues 自测是否覆盖关键点。`;
@@ -6367,6 +6792,7 @@
         sessionSeen.essay.add(item.id);
         const attempts = Number(previous.attempts || (submittedEssayRecord(previous) ? 1 : 0)) + 1;
         state.essay[item.id] = {...previous, answer, feedback, modelAnswer: item.a, modelRubric: item.rubric || [], score: null, correct: false, wrong: true, attempts, draft: false, ts: new Date().toISOString()};
+        if (state.hideDone) state.retain.essay = item.id;
         $("essayStatus").textContent = "评分失败，已显示参考答案。";
       } finally {
         $("floatGradeEssay").disabled = false;
@@ -6394,6 +6820,7 @@
         draft: false,
         ts: new Date().toISOString()
       };
+      if (state.hideDone) state.retain.essay = item.id;
       save();
       renderEssay();
     }
@@ -6685,7 +7112,7 @@
       lines.push("");
       lines.push("错题讲解入口：");
       if (!data.mistakes.length) {
-        lines.push("- 当前没有错题；可以切到“只练难题”或“只练计算选择题”制造诊断样本。");
+        lines.push("- 当前没有错题；可以切到“只练难题”或“只练计算题”制造诊断样本。");
       } else {
         data.mistakes.slice(0, 6).forEach((item, index) => {
           lines.push(`${index + 1}. Ch ${item.chapter} · ${item.topic}: ${item.question}`);
@@ -6694,7 +7121,7 @@
         });
       }
       lines.push("");
-      lines.push("下一轮建议：先做“只练错题”，再做“只练计算选择题”，最后做 Chapter 20/21 hard cases；每道错题必须写出英文关键词和判断依据。");
+      lines.push("下一轮建议：先做“只练错题”，再做“只练计算题”，最后做 Chapter 20/21 hard cases；每道错题必须写出英文关键词和判断依据。");
       return lines.join("\n");
     }
 
@@ -6744,7 +7171,7 @@
           <small><strong>错因判断：</strong>${escapeHtml(item.misconception)}</small>
           <small><strong>复盘点：</strong>${escapeHtml(item.explanation)}</small>
         </div>
-      `).join("") : `<div class="review-card"><strong>当前没有错题</strong><small>可以切到“只练难题”或“只练计算选择题”制造诊断样本。</small></div>`;
+      `).join("") : `<div class="review-card"><strong>当前没有错题</strong><small>可以切到“只练难题”或“只练计算题”制造诊断样本。</small></div>`;
       const chapterChart = weakChapters.length ? chartHtml(weakChapters, "priority", {label: row => row.label}) : "";
       const topicChart = weakTopics.length ? chartHtml(weakTopics, "priority", {label: row => row.label}) : "";
       return `
@@ -6782,7 +7209,7 @@
           </div>
           <div class="review-card">
             <strong>下一轮建议</strong>
-            <small>先做“只练错题”，再做“只练计算选择题”，最后做 Chapter 20/21 hard cases。每道错题必须写出英文关键词和判断依据。</small>
+            <small>先做“只练错题”，再做“只练计算题”，最后做 Chapter 20/21 hard cases。每道错题必须写出英文关键词和判断依据。</small>
           </div>
         </div>
       `;
@@ -6829,7 +7256,7 @@
         "二、按章节补漏: For each priority chapter, write: book core concept, observed weakness, likely trap, exact revision action, and 1 English exam sentence template.",
         "三、错题精讲: For up to 8 mistakes, explain why the correct logic works, why the wrong logic is tempting, and which English keywords in the question should trigger the correct model.",
         "四、计算题专项: If Chapter 13/15/17 appear, include formulas and one micro-drill for service volume/cost, NPV/IRR, SLA availability/MTBF/MTTR.",
-        "五、下一轮刷题顺序: Give a numbered 20-40 minute plan using the app modes: 错题集, 只练未做, 只练计算选择题, 大题区.",
+        "五、下一轮刷题顺序: Give a numbered 20-40 minute plan using the app modes: 错题集, 只练未做, 只练计算题, 大题区.",
         "Be practical and exam-oriented. Do not invent facts outside the provided course data.",
         "Output in Chinese, but preserve key English terms such as service unit, service catalog, NPV, SLA, COBIT goals cascade, Strategic Alignment Model, Strategic Impact Grid, operating model.",
         "",
@@ -6960,12 +7387,19 @@
           <div class="mistake-detail">${entry.detail}</div>
           <div class="mistake-actions">
             <button class="primary" data-action="retry" data-type="${entry.type}" data-id="${entry.item.id}">重练这题 / Retry</button>
+            ${entry.type === "essay" ? "" : `<button data-action="ai-explain" data-type="${entry.type}" data-id="${entry.item.id}">AI解析 / Explain</button>`}
             <button data-action="remove" data-type="${entry.type}" data-id="${entry.item.id}">移出错题集 / Remove</button>
           </div>
         </section>
       `).join("");
       box.querySelectorAll("button[data-action='retry']").forEach(btn => {
         btn.onclick = () => jumpToMistake(btn.dataset.type, btn.dataset.id);
+      });
+      box.querySelectorAll("button[data-action='ai-explain']").forEach(btn => {
+        btn.onclick = () => {
+          jumpToMistake(btn.dataset.type, btn.dataset.id);
+          setTimeout(() => explainCurrentItem(btn.dataset.type), 0);
+        };
       });
       box.querySelectorAll("button[data-action='remove']").forEach(btn => {
         btn.onclick = () => removeMistake(btn.dataset.type, btn.dataset.id);
@@ -7071,7 +7505,7 @@
     function syncApiKey(sourceId) {
       const source = $(sourceId);
       if (!source) return;
-      ["globalApiKey", "apiKey"].forEach(id => {
+      ["globalApiKey", "apiKey", "essayInlineApiKey"].forEach(id => {
         const target = $(id);
         if (target && target !== source) target.value = source.value;
       });
@@ -7082,12 +7516,17 @@
       $("apiDrawerStatus").textContent = source.value
         ? ($("rememberApiKey")?.checked ? "API key 已注入并保存在本机浏览器；不会写进 HTML 源码。" : "API key 已注入到当前页面；刷新后不会保留。")
         : "API key 已清空。";
+      if ($("essayInlineApiStatus")) {
+        $("essayInlineApiStatus").textContent = source.value
+          ? "API key 已就绪；同一题同一答案会直接复用缓存评分。"
+          : "这里和右下角 AI 设置共用同一个本机保存 key；答案没变时会复用上次评分，不重复调用 API。";
+      }
     }
 
     function syncAiModel(sourceId) {
       const source = $(sourceId);
       if (!source) return;
-      ["globalModel", "aiModel"].forEach(id => {
+      ["globalModel", "aiModel", "essayInlineModel"].forEach(id => {
         const target = $(id);
         if (target && target !== source) target.value = source.value;
       });
@@ -7096,11 +7535,12 @@
 
     function clearSavedApiKey() {
       localStorage.removeItem(apiKeyStoreKey);
-      ["globalApiKey", "apiKey"].forEach(id => {
+      ["globalApiKey", "apiKey", "essayInlineApiKey"].forEach(id => {
         const input = $(id);
         if (input) input.value = "";
       });
       $("apiDrawerStatus").textContent = "已清除本机保存的 API key。";
+      if ($("essayInlineApiStatus")) $("essayInlineApiStatus").textContent = "已清除本机保存的 API key。";
     }
 
     function openAiReview(runNow = false) {
@@ -7195,8 +7635,11 @@
     $("apiClose").onclick = () => setApiDrawer(false);
     $("globalApiKey").oninput = () => syncApiKey("globalApiKey");
     $("apiKey").oninput = () => syncApiKey("apiKey");
+    $("essayInlineApiKey").oninput = () => syncApiKey("essayInlineApiKey");
     $("globalModel").onchange = () => syncAiModel("globalModel");
     $("aiModel").onchange = () => syncAiModel("aiModel");
+    $("essayInlineModel").onchange = () => syncAiModel("essayInlineModel");
+    $("essayInlineGrade").onclick = gradeEssay;
     $("apiGoReview").onclick = () => openAiReview(false);
     $("apiRunReview").onclick = () => openAiReview(true);
     $("apiGoEssay").onclick = () => openEssayGrade(false);
@@ -7237,18 +7680,24 @@
       resetPositions();
       render();
     };
+    $("hideDone").onchange = () => {
+      state.hideDone = $("hideDone").checked;
+      resetPositions();
+      render();
+    };
     $("showAnswer").onclick = () => {
       state.showAnswer = !state.showAnswer;
         $("showAnswer").textContent = state.showAnswer ? "隐藏答案 / Hide" : "显示答案 / Show";
       renderCards();
     };
+    $("aiExplainCard").onclick = () => explainCurrentItem("card");
     $("knownCard").onclick = () => {
       const item = filtered(cards, "card")[state.cardIndex];
       if (!item) return;
       state.known[item.id] = true;
       delete state.weak[item.id];
       state.showAnswer = false;
-      if ($("mode").value !== "unseen") state.cardIndex += 1;
+      if ($("mode").value !== "unseen" && !state.hideDone) state.cardIndex += 1;
       render();
     };
     $("weakCard").onclick = () => {
@@ -7257,7 +7706,7 @@
       state.weak[item.id] = true;
       delete state.known[item.id];
       state.showAnswer = false;
-      if ($("mode").value !== "unseen") state.cardIndex += 1;
+      if ($("mode").value !== "unseen" && !state.hideDone) state.cardIndex += 1;
       render();
     };
     $("prevCard").onclick = () => {
@@ -7271,12 +7720,14 @@
       render();
     };
     $("prevQuiz").onclick = () => {
+      delete state.retain.quiz;
       state.quizIndex -= 1;
       render();
     };
     $("quizMap").onclick = jumpCurrentQuizToMap;
+    $("aiExplainQuiz").onclick = () => explainCurrentItem("quiz");
     $("nextQuiz").onclick = () => {
-      if ($("mode").value === "unseen") {
+      if ($("mode").value === "unseen" || state.hideDone) {
         delete state.retain.quiz;
         state.quizIndex = firstUnansweredIndex(filtered(quiz, "quiz"), "quiz");
       } else {
@@ -7290,24 +7741,32 @@
     $("floatGradeEssay").onclick = gradeEssay;
     $("showEssayModel").onclick = showEssayModel;
     $("prevEssay").onclick = () => {
+      delete state.retain.essay;
       state.essayIndex -= 1;
       render();
     };
     $("nextEssay").onclick = () => {
-      state.essayIndex += 1;
+      if (state.hideDone) {
+        delete state.retain.essay;
+        state.essayIndex = firstUnansweredIndex(filtered(essays, "essay"), "essay");
+      } else {
+        state.essayIndex += 1;
+      }
       render();
     };
     $("checkCloze").onclick = () => checkCloze(false);
     $("revealCloze").onclick = () => checkCloze(true);
+    $("aiExplainCloze").onclick = () => explainCurrentItem("cloze");
     $("clozeInput").onkeydown = (event) => {
       if (event.key === "Enter") checkCloze(false);
     };
     $("prevCloze").onclick = () => {
+      delete state.retain.cloze;
       state.clozeIndex -= 1;
       render();
     };
     $("nextCloze").onclick = () => {
-      if ($("mode").value === "unseen") {
+      if ($("mode").value === "unseen" || state.hideDone) {
         delete state.retain.cloze;
         state.clozeIndex = firstUnansweredIndex(filtered(cloze, "cloze"), "cloze");
       } else {
