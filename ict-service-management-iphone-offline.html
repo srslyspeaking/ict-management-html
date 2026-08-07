@@ -1035,8 +1035,26 @@
     }
 
     .api-drawer input,
-    .api-drawer select {
+    .api-drawer select,
+    .api-drawer textarea {
       width: 100%;
+    }
+
+    .api-drawer textarea {
+      min-height: 82px;
+      resize: vertical;
+      line-height: 1.38;
+    }
+
+    .api-free-output {
+      max-height: 240px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #f8fbfa;
+      font-size: 13px;
+      line-height: 1.5;
     }
 
     .api-drawer-actions {
@@ -1871,13 +1889,16 @@
       <option value="gpt-4.1-mini">gpt-4.1-mini</option>
       <option value="gpt-4o-mini">gpt-4o-mini</option>
     </select>
+    <textarea id="apiOwnQuestion" autocomplete="off" placeholder="问自己的问题：比如“这题为什么不是 COBIT？”“Chapter 15 计算题怎么做？”“按我错题出一道类似题”。"></textarea>
     <div class="api-drawer-actions">
+      <button id="apiAskOwn" class="primary" type="button">问自己的问题</button>
       <button id="apiGoReview" class="primary" type="button">打开 AI 复盘</button>
       <button id="apiRunReview" type="button">直接生成复盘</button>
       <button id="apiGoEssay" type="button">打开大题区</button>
       <button id="apiGradeEssay" type="button">评分当前大题</button>
       <button id="clearSavedApiKey" type="button">清除保存 key</button>
     </div>
+    <div id="apiOwnAnswer" class="api-free-output" hidden></div>
     <div id="apiDrawerStatus" class="ai-status">建议只在自己设备上临时粘贴 key；上传 GitHub 前不要把 key 写入源码。</div>
   </div>
 
@@ -7653,6 +7674,150 @@
       }
     }
 
+    function plainTextFromHtml(value) {
+      const div = document.createElement("div");
+      div.innerHTML = String(value || "");
+      return (div.textContent || div.innerText || "").replace(/\s+/g, " ").trim();
+    }
+
+    function currentFreeAskContext() {
+      const data = reviewDataset();
+      const lines = [
+        `Current app view: ${state.view}`,
+        `Current chapter filter: ${state.chapter}`,
+        `Current practice mode: ${state.mode}`,
+        `Search filter: ${state.search || "(none)"}`,
+        `Progress summary: quiz ${data.overall.quizDone} done / ${data.overall.quizWrong} wrong; cloze ${data.overall.clozeDone} done / ${data.overall.clozeWrong} wrong; essay ${data.overall.essayDone || 0} done / ${data.overall.essayWeak || 0} weak; weak flashcards ${data.overall.weakCards}.`
+      ];
+      if (state.view === "quiz") {
+        const item = currentQuizItem();
+        if (item) {
+          const record = state.quiz[item.id] || {};
+          lines.push(
+            "",
+            "Current MCQ:",
+            `Chapter ${item.c} / ${item.t}`,
+            `Question: ${item.q}`,
+            `Options: ${item.o.map((option, index) => `${String.fromCharCode(65 + index)}. ${option}`).join(" | ")}`,
+            `Correct answer: ${String.fromCharCode(65 + item.a)}. ${item.o[item.a]}`,
+            `Student previous answer: ${Number.isInteger(record.choice) ? `${String.fromCharCode(65 + record.choice)}. ${item.o[record.choice]}` : "(not answered yet)"}`,
+            `Explanation: ${item.e || "(none)"}`,
+            `Source: ${sourceFor(item, "quiz")}`
+          );
+        }
+      } else if (state.view === "essay") {
+        const {item} = currentEssay();
+        if (item) {
+          lines.push(
+            "",
+            "Current essay:",
+            `Chapter ${item.c} / ${item.t}`,
+            `Question: ${item.q}`,
+            item.material ? `Material: ${plainTextFromHtml(item.material).slice(0, 900)}` : "Material: (none)",
+            `Student draft: ${($("essayAnswer")?.value || state.essay[item.id]?.answer || "(blank)").slice(0, 1200)}`,
+            `Reference answer: ${item.a}`,
+            `Rubric: ${(item.rubric || []).join("; ")}`,
+            `Source: ${sourceFor(item, "essay")}`
+          );
+        }
+      } else if (state.view === "cloze") {
+        const {item} = currentCloze();
+        if (item) {
+          const record = state.cloze[item.id] || {};
+          lines.push(
+            "",
+            "Current cloze:",
+            `Chapter ${item.c} / ${item.t}`,
+            `Question: ${item.q}`,
+            `Accepted answer: ${(item.answers || []).join(" / ")}`,
+            `Student previous answer: ${record.answer || "(not answered yet)"}`,
+            `Explanation: ${item.e || "(none)"}`,
+            `Source: ${sourceFor(item, "cloze")}`
+          );
+        }
+      } else if (state.view === "cards") {
+        const item = currentCardItem();
+        if (item) {
+          lines.push(
+            "",
+            "Current flashcard:",
+            `Chapter ${item.c} / ${item.t}`,
+            `Prompt: ${item.q}`,
+            `Answer: ${item.a}`,
+            `Source: ${sourceFor(item, "card")}`
+          );
+        }
+      } else {
+        const weak = data.chapters.filter(row => row.done || row.weakCards).slice(0, 5)
+          .map(row => `${row.label}: priority ${row.priority}, accuracy ${row.accuracy ?? "n/a"}%, wrong ${row.wrong}, weak cards ${row.weakCards}`)
+          .join("\n");
+        lines.push("", "Current diagnosis snapshot:", weak || "Not enough practice data yet.");
+      }
+      return lines.join("\n");
+    }
+
+    function freeQuestionPrompt(question) {
+      return [
+        "You are a strict bilingual ICT Service Management exam tutor.",
+        "The student is preparing for an English exam. Answer in Chinese, but preserve important English course terms.",
+        "Use only the supplied current-item context, progress data, and course chapter scope: chapters 2, 3, and 13-21 of The IT Management Essentials plus the lecture/exercise material already represented in this app.",
+        "Be concrete and exam-oriented. If the student asks for a new drill question, create one and provide the answer after a short separator.",
+        "Return plain text only. Do not use Markdown headings, asterisks, hashtags, or decorative bullets.",
+        "",
+        `Student question: ${question}`,
+        "",
+        "Current app context:",
+        currentFreeAskContext()
+      ].join("\n");
+    }
+
+    async function askOwnQuestion() {
+      const question = $("apiOwnQuestion").value.trim();
+      const apiKey = $("globalApiKey").value.trim();
+      const model = $("globalModel").value;
+      const output = $("apiOwnAnswer");
+      if (!question) {
+        $("apiDrawerStatus").textContent = "先写一个你想问的问题。";
+        $("apiOwnQuestion").focus();
+        return;
+      }
+      if (!apiKey) {
+        output.hidden = false;
+        output.innerHTML = formattedReviewHtml("需要先填 OpenAI API key，才能回答你自己的问题。也可以先点“复制复盘数据”，粘贴到 ChatGPT 里问。");
+        $("apiDrawerStatus").textContent = "缺少 API key。";
+        $("globalApiKey").focus();
+        return;
+      }
+      output.hidden = false;
+      output.innerHTML = formattedReviewHtml("正在结合当前题目和你的复习记录回答...");
+      $("apiAskOwn").disabled = true;
+      $("apiDrawerStatus").textContent = "正在回答你的问题...";
+      try {
+        const response = await fetch("https://api.openai.com/v1/responses", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify(responseRequestBody(model, freeQuestionPrompt(question), 0.2))
+        });
+        const json = await response.json();
+        if (!response.ok) throw new Error(json.error?.message || `HTTP ${response.status}`);
+        const text = json.output_text || (json.output || [])
+          .flatMap(item => item.content || [])
+          .map(part => part.text || "")
+          .join("\n")
+          .trim();
+        output.innerHTML = formattedReviewHtml(text || "GPT 返回为空；请换一种问法或稍后重试。");
+        $("apiDrawerStatus").textContent = "已回答。";
+      } catch (error) {
+        output.innerHTML = formattedReviewHtml(`请求失败：${error.message}\n\n你可以把问题复制到 ChatGPT，或检查 API key / 模型名。`);
+        $("apiDrawerStatus").textContent = "自由提问失败。";
+      } finally {
+        $("apiAskOwn").disabled = false;
+      }
+    }
+
     function jumpToMistake(type, id) {
       $("mode").value = "all";
       $("search").value = "";
@@ -7990,6 +8155,13 @@
 
     $("apiFab").onclick = () => setApiDrawer($("apiDrawer").hidden);
     $("apiClose").onclick = () => setApiDrawer(false);
+    $("apiAskOwn").onclick = askOwnQuestion;
+    $("apiOwnQuestion").onkeydown = event => {
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        askOwnQuestion();
+      }
+    };
     $("globalApiKey").oninput = () => syncApiKey("globalApiKey");
     $("apiKey").oninput = () => syncApiKey("apiKey");
     $("essayInlineApiKey").oninput = () => syncApiKey("essayInlineApiKey");
