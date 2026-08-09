@@ -1186,6 +1186,27 @@
       border-color: var(--brand-2);
     }
 
+    .calc-fab {
+      position: fixed;
+      right: 84px;
+      bottom: 18px;
+      z-index: 40;
+      width: 66px;
+      height: 54px;
+      min-height: 54px;
+      border-radius: 999px;
+      border-color: #315f8f;
+      background: #315f8f;
+      color: #fff;
+      font-weight: 900;
+      box-shadow: var(--shadow);
+    }
+
+    .calc-fab.active {
+      background: var(--brand-2);
+      border-color: var(--brand-2);
+    }
+
     .api-drawer {
       position: fixed;
       right: 18px;
@@ -1201,7 +1222,26 @@
       gap: 10px;
     }
 
+    .calc-drawer {
+      position: fixed;
+      right: 18px;
+      bottom: 82px;
+      z-index: 39;
+      width: min(380px, calc(100vw - 28px));
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 10px;
+    }
+
     .api-drawer[hidden] {
+      display: none;
+    }
+
+    .calc-drawer[hidden] {
       display: none;
     }
 
@@ -1228,6 +1268,92 @@
     .api-drawer select,
     .api-drawer textarea {
       width: 100%;
+    }
+
+    .calc-display {
+      width: 100%;
+      min-height: 52px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #f8fbfa;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 22px;
+      text-align: right;
+    }
+
+    .calc-pad {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .calc-pad button {
+      min-width: 0;
+      min-height: 44px;
+      font-weight: 800;
+    }
+
+    .calc-pad .calc-op {
+      color: var(--brand);
+      border-color: rgba(18, 99, 107, 0.35);
+      background: #f0f8f8;
+    }
+
+    .calc-pad .calc-equals {
+      color: #fff;
+      background: var(--brand);
+      border-color: var(--brand);
+    }
+
+    .calc-tape,
+    .npv-result {
+      min-height: 28px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .npv-tool {
+      border-top: 1px solid var(--line);
+      padding-top: 8px;
+    }
+
+    .npv-tool summary {
+      cursor: pointer;
+      font-weight: 900;
+      color: var(--brand);
+      margin-bottom: 8px;
+    }
+
+    .npv-grid {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+    }
+
+    .npv-grid label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .npv-grid input,
+    .npv-grid textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .npv-grid textarea {
+      min-height: 64px;
+      resize: vertical;
+      line-height: 1.35;
     }
 
     .api-drawer textarea {
@@ -1748,7 +1874,17 @@
         height: 50px;
         min-height: 50px;
       }
+      .calc-fab {
+        right: 72px;
+        bottom: calc(14px + env(safe-area-inset-bottom));
+        width: 62px;
+        height: 50px;
+        min-height: 50px;
+      }
       body[data-view="essay"] .api-fab {
+        bottom: calc(150px + env(safe-area-inset-bottom));
+      }
+      body[data-view="essay"] .calc-fab {
         bottom: calc(150px + env(safe-area-inset-bottom));
       }
       .api-drawer {
@@ -1759,10 +1895,24 @@
         padding: 12px;
         border-radius: 12px;
       }
+      .calc-drawer {
+        right: 10px;
+        left: 10px;
+        bottom: calc(76px + env(safe-area-inset-bottom));
+        width: auto;
+        padding: 12px;
+        border-radius: 12px;
+      }
       body[data-view="essay"] .api-drawer {
         bottom: calc(210px + env(safe-area-inset-bottom));
       }
+      body[data-view="essay"] .calc-drawer {
+        bottom: calc(210px + env(safe-area-inset-bottom));
+      }
       .api-drawer-actions {
+        grid-template-columns: 1fr;
+      }
+      .npv-grid {
         grid-template-columns: 1fr;
       }
       .row { gap: 6px; }
@@ -2122,6 +2272,55 @@
     </div>
     <div id="termBody" class="term-body"></div>
     <div id="termTip" class="term-tip"></div>
+  </div>
+
+  <button id="calcFab" class="calc-fab" type="button" aria-expanded="false" aria-controls="calcDrawer" title="计算器">Calc</button>
+  <div id="calcDrawer" class="calc-drawer" hidden>
+    <div class="api-drawer-head">
+      <div>
+        <strong>计算器 / Calculator</strong>
+        <span>普通计算 + NPV 折现计算</span>
+      </div>
+      <button id="calcClose" class="api-close" type="button" aria-label="关闭计算器">×</button>
+    </div>
+    <input id="calcDisplay" class="calc-display" inputmode="decimal" autocomplete="off" value="0" aria-label="Calculator expression">
+    <div id="calcTape" class="calc-tape">可输入 120000/8000、(30000+40000)/1.08、15% 等。</div>
+    <div id="calcPad" class="calc-pad" aria-label="Calculator keypad">
+      <button type="button" data-calc="clear">C</button>
+      <button type="button" data-calc="back">Back</button>
+      <button type="button" data-calc="append:(" class="calc-op">(</button>
+      <button type="button" data-calc="append:)" class="calc-op">)</button>
+      <button type="button" data-calc="append:7">7</button>
+      <button type="button" data-calc="append:8">8</button>
+      <button type="button" data-calc="append:9">9</button>
+      <button type="button" data-calc="append:/" class="calc-op">/</button>
+      <button type="button" data-calc="append:4">4</button>
+      <button type="button" data-calc="append:5">5</button>
+      <button type="button" data-calc="append:6">6</button>
+      <button type="button" data-calc="append:*" class="calc-op">*</button>
+      <button type="button" data-calc="append:1">1</button>
+      <button type="button" data-calc="append:2">2</button>
+      <button type="button" data-calc="append:3">3</button>
+      <button type="button" data-calc="append:-" class="calc-op">-</button>
+      <button type="button" data-calc="append:0">0</button>
+      <button type="button" data-calc="append:.">.</button>
+      <button type="button" data-calc="equals" class="calc-equals">=</button>
+      <button type="button" data-calc="append:+" class="calc-op">+</button>
+    </div>
+    <details class="npv-tool" open>
+      <summary>NPV 小工具</summary>
+      <div class="npv-grid">
+        <label for="npvRate">Discount rate %</label>
+        <input id="npvRate" inputmode="decimal" autocomplete="off" placeholder="例如 8">
+        <label for="npvCashflows">Cash flows</label>
+        <textarea id="npvCashflows" autocomplete="off" placeholder="例如 -100000, 30000, 40000, 45000"></textarea>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button id="calcNpv" class="primary" type="button">计算 NPV</button>
+        <button id="copyCalcResult" type="button">复制结果</button>
+      </div>
+      <div id="npvResult" class="npv-result">现金流按 t0, t1, t2...；NPV = sum(CF_t / (1+r)^t)。</div>
+    </details>
   </div>
 
   <button id="apiFab" class="api-fab" type="button" aria-expanded="false" aria-controls="apiDrawer" title="AI 设置">AI</button>
@@ -9668,10 +9867,119 @@ Key point: the diagram must contain both the model structure and the case-specif
     }
 
     function setApiDrawer(open) {
+      if (open && $("calcDrawer")) setCalcDrawer(false);
       $("apiDrawer").hidden = !open;
       $("apiFab").classList.toggle("active", open);
       $("apiFab").setAttribute("aria-expanded", String(open));
       if (open) $("globalApiKey").focus();
+    }
+
+    let lastCalcResultText = "";
+
+    function setCalcDrawer(open) {
+      if (open && $("apiDrawer") && !$("apiDrawer").hidden) setApiDrawer(false);
+      $("calcDrawer").hidden = !open;
+      $("calcFab").classList.toggle("active", open);
+      $("calcFab").setAttribute("aria-expanded", String(open));
+      if (open) $("calcDisplay").focus();
+    }
+
+    function formatCalcNumber(value) {
+      if (!Number.isFinite(value)) throw new Error("结果不是有限数字。");
+      if (Math.abs(value) >= 1e10 || (Math.abs(value) > 0 && Math.abs(value) < 1e-6)) {
+        return value.toExponential(6);
+      }
+      const rounded = Number(value.toFixed(8));
+      return rounded.toLocaleString(undefined, {maximumFractionDigits: 8});
+    }
+
+    function cleanCalcExpression(raw) {
+      const expression = String(raw || "")
+        .replace(/[，]/g, ",")
+        .replace(/,/g, "")
+        .replace(/[×x]/g, "*")
+        .replace(/[÷]/g, "/")
+        .replace(/−/g, "-")
+        .replace(/(\d+(?:\.\d+)?)%/g, "($1/100)")
+        .trim();
+      if (!expression) throw new Error("先输入算式。");
+      if (expression.length > 180) throw new Error("算式太长，请拆开算。");
+      if (expression.includes("**")) throw new Error("不支持指数运算。");
+      if (!/^[0-9+\-*/().\s]+$/.test(expression)) throw new Error("只支持数字、+ - * / ( ) 和百分号。");
+      return expression;
+    }
+
+    function evaluateCalculator() {
+      const raw = $("calcDisplay").value;
+      try {
+        const expression = cleanCalcExpression(raw);
+        const result = Function(`"use strict"; return (${expression});`)();
+        const formatted = formatCalcNumber(result);
+        $("calcDisplay").value = formatted.replace(/,/g, "");
+        lastCalcResultText = `${raw} = ${formatted}`;
+        $("calcTape").textContent = lastCalcResultText;
+      } catch (error) {
+        $("calcTape").textContent = error.message;
+      }
+    }
+
+    function appendCalculatorToken(token) {
+      const input = $("calcDisplay");
+      if (input.value === "0" && /^[0-9.]$/.test(token)) input.value = "";
+      input.value += token;
+      input.focus();
+    }
+
+    function clearCalculator() {
+      $("calcDisplay").value = "0";
+      $("calcTape").textContent = "可输入 120000/8000、(30000+40000)/1.08、15% 等。";
+    }
+
+    function backspaceCalculator() {
+      const input = $("calcDisplay");
+      input.value = input.value.length > 1 ? input.value.slice(0, -1) : "0";
+      input.focus();
+    }
+
+    function parseNpvCashflows(raw) {
+      const matches = String(raw || "")
+        .replace(/[€$£¥]/g, "")
+        .replace(/[，、]/g, ",")
+        .match(/[-+]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?/g) || [];
+      const values = matches.map(part => Number(part.replace(/,/g, "")));
+      if (!values.length) throw new Error("先输入现金流。");
+      if (values.some(value => !Number.isFinite(value))) throw new Error("现金流里有无法识别的数字。");
+      return values;
+    }
+
+    function calculateNpv() {
+      try {
+        const ratePct = Number(String($("npvRate").value || "").replace("%", "").trim());
+        if (!Number.isFinite(ratePct)) throw new Error("Discount rate 需要是数字。");
+        const rate = ratePct / 100;
+        if (rate <= -1) throw new Error("Discount rate 不能小于或等于 -100%。");
+        const flows = parseNpvCashflows($("npvCashflows").value);
+        const presentValues = flows.map((cashFlow, index) => cashFlow / Math.pow(1 + rate, index));
+        const npv = presentValues.reduce((sum, value) => sum + value, 0);
+        const detail = presentValues.map((value, index) => `t${index}: ${formatCalcNumber(value)}`).join(" | ");
+        lastCalcResultText = `NPV @ ${ratePct}% = ${formatCalcNumber(npv)} (${detail})`;
+        $("npvResult").textContent = lastCalcResultText;
+        $("calcTape").textContent = lastCalcResultText;
+        $("calcDisplay").value = String(Number(npv.toFixed(8)));
+      } catch (error) {
+        $("npvResult").textContent = error.message;
+      }
+    }
+
+    async function copyCalculatorResult() {
+      const text = lastCalcResultText || $("calcTape").textContent || $("npvResult").textContent;
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        $("calcTape").textContent = "已复制：" + text;
+      } catch {
+        $("calcTape").textContent = text;
+      }
     }
 
     function syncApiKey(sourceId) {
@@ -9824,6 +10132,25 @@ Key point: the diagram must contain both the model structure and the case-specif
       $("drawingStatus").textContent = "已清除图片；仍可直接在页面画图。";
     }
 
+    $("calcFab").onclick = () => setCalcDrawer($("calcDrawer").hidden);
+    $("calcClose").onclick = () => setCalcDrawer(false);
+    $("calcPad").onclick = event => {
+      const button = event.target.closest("button[data-calc]");
+      if (!button) return;
+      const action = button.dataset.calc;
+      if (action === "clear") clearCalculator();
+      else if (action === "back") backspaceCalculator();
+      else if (action === "equals") evaluateCalculator();
+      else if (action.startsWith("append:")) appendCalculatorToken(action.slice(7));
+    };
+    $("calcDisplay").onkeydown = event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        evaluateCalculator();
+      }
+    };
+    $("calcNpv").onclick = calculateNpv;
+    $("copyCalcResult").onclick = copyCalculatorResult;
     $("apiFab").onclick = () => setApiDrawer($("apiDrawer").hidden);
     $("apiClose").onclick = () => setApiDrawer(false);
     $("apiAskOwn").onclick = askOwnQuestion;
@@ -9863,6 +10190,7 @@ Key point: the diagram must contain both the model structure and the case-specif
     };
     document.addEventListener("keydown", event => {
       if (event.key === "Escape" && !$("apiDrawer").hidden) setApiDrawer(false);
+      if (event.key === "Escape" && !$("calcDrawer").hidden) setCalcDrawer(false);
     });
 
     document.querySelectorAll(".tabs button").forEach(btn => {
@@ -10047,7 +10375,7 @@ Key point: the diagram must contain both the model structure and the case-specif
       if (!target) return false;
       const tag = target.tagName;
       if (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(tag)) return true;
-      if (target.closest?.("#apiDrawer, #termPopover, .term-popover, .drawing-panel")) return true;
+      if (target.closest?.("#apiDrawer, #calcDrawer, #termPopover, .term-popover, .drawing-panel")) return true;
       return false;
     }
 
