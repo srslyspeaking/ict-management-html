@@ -5676,6 +5676,7 @@
     state.sidebarCollapsed ||= false;
     state.hideDone ||= false;
     state.itemAI ||= {};
+    state.weakRounds ||= {};
     const sessionSeen = {quiz: new Set(), cloze: new Set(), essay: new Set()};
 
     const $ = (id) => document.getElementById(id);
@@ -6237,6 +6238,45 @@
       return norm(item.t || "").includes("drawing") || text.includes("draw ") || text.includes("diagram") || text.includes("quadrant") || text.includes("matrix");
     }
 
+    function weakRoundKey(type) {
+      return `${type}|${state.chapter}|${norm($("search").value.trim())}|${state.shuffleSeed || 0}`;
+    }
+
+    function isWeakItem(type, item) {
+      return type === "card" ? Boolean(state.weak[item.id]) : Boolean(state[type]?.[item.id]?.wrong);
+    }
+
+    function clearWeakRound(type = "") {
+      state.weakRounds ||= {};
+      if (type) delete state.weakRounds[type];
+      else state.weakRounds = {};
+    }
+
+    function weakRoundIdSet(type, candidates) {
+      state.weakRounds ||= {};
+      const key = weakRoundKey(type);
+      const existing = state.weakRounds[type];
+      if (!existing || existing.key !== key || !Array.isArray(existing.ids)) {
+        state.weakRounds[type] = {
+          key,
+          ids: candidates.filter(item => isWeakItem(type, item)).map(item => item.id),
+          createdAt: new Date().toISOString()
+        };
+      }
+      return new Set(state.weakRounds[type].ids || []);
+    }
+
+    function advanceWithinWeakRound(type, list) {
+      const indexKey = {card: "cardIndex", quiz: "quizIndex", cloze: "clozeIndex", essay: "essayIndex"}[type];
+      if (!indexKey) return;
+      if ($("mode").value === "weak" && state[indexKey] >= list.length - 1) {
+        clearWeakRound(type);
+        state[indexKey] = 0;
+      } else {
+        state[indexKey] += 1;
+      }
+    }
+
     function filtered(list, type) {
       const term = norm($("search").value.trim());
       const mode = $("mode").value;
@@ -6255,7 +6295,8 @@
         out = out.filter(item => norm(item.t).includes("hard"));
       }
       if (mode === "weak") {
-        out = out.filter(item => type === "card" ? state.weak[item.id] : state[type]?.[item.id]?.wrong);
+        const roundIds = weakRoundIdSet(type, out);
+        out = out.filter(item => roundIds.has(item.id));
       }
       if (mode === "unseen") {
         const retainId = state.retain?.[type];
@@ -6311,6 +6352,7 @@
     }
 
     function resetPositions() {
+      clearWeakRound();
       state.retain = {};
       state.cardIndex = 0;
       state.quizIndex = firstUnansweredIndex(filtered(quiz, "quiz"), "quiz");
@@ -9274,7 +9316,7 @@
       state.known[item.id] = true;
       delete state.weak[item.id];
       state.showAnswer = false;
-      if ($("mode").value !== "unseen" && !state.hideDone) state.cardIndex += 1;
+      if ($("mode").value !== "unseen" && !state.hideDone) advanceWithinWeakRound("card", filtered(cards, "card"));
       render();
     };
     $("weakCard").onclick = () => {
@@ -9283,7 +9325,7 @@
       state.weak[item.id] = true;
       delete state.known[item.id];
       state.showAnswer = false;
-      if ($("mode").value !== "unseen" && !state.hideDone) state.cardIndex += 1;
+      if ($("mode").value !== "unseen" && !state.hideDone) advanceWithinWeakRound("card", filtered(cards, "card"));
       render();
     };
     $("prevCard").onclick = () => {
@@ -9292,7 +9334,7 @@
       render();
     };
     $("nextCard").onclick = () => {
-      state.cardIndex += 1;
+      advanceWithinWeakRound("card", filtered(cards, "card"));
       state.showAnswer = false;
       render();
     };
@@ -9308,7 +9350,7 @@
         delete state.retain.quiz;
         state.quizIndex = firstUnansweredIndex(filtered(quiz, "quiz"), "quiz");
       } else {
-        state.quizIndex += 1;
+        advanceWithinWeakRound("quiz", filtered(quiz, "quiz"));
       }
       render();
     };
@@ -9327,7 +9369,7 @@
         delete state.retain.essay;
         state.essayIndex = firstUnansweredIndex(filtered(essays, "essay"), "essay");
       } else {
-        state.essayIndex += 1;
+        advanceWithinWeakRound("essay", filtered(essays, "essay"));
       }
       render();
     };
@@ -9347,7 +9389,7 @@
         delete state.retain.cloze;
         state.clozeIndex = firstUnansweredIndex(filtered(cloze, "cloze"), "cloze");
       } else {
-        state.clozeIndex += 1;
+        advanceWithinWeakRound("cloze", filtered(cloze, "cloze"));
       }
       render();
       $("clozeInput").focus();
@@ -9410,6 +9452,38 @@
       save();
       renderView();
     };
+    function keyboardNavBlocked(event) {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return true;
+      const target = event.target;
+      if (!target) return false;
+      const tag = target.tagName;
+      if (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(tag)) return true;
+      if (target.closest?.("#apiDrawer, #termPopover, .term-popover, .drawing-panel")) return true;
+      return false;
+    }
+
+    function clickVisibleNav(id) {
+      const button = $(id);
+      if (!button || button.disabled || button.hidden) return false;
+      button.click();
+      return true;
+    }
+
+    function keyboardStep(direction) {
+      const prev = direction < 0;
+      if (state.view === "cards") return clickVisibleNav(prev ? "prevCard" : "nextCard");
+      if (state.view === "quiz") return clickVisibleNav(prev ? "prevQuiz" : "nextQuiz");
+      if (state.view === "essay") return clickVisibleNav(prev ? "prevEssay" : "nextEssay");
+      if (state.view === "cloze") return clickVisibleNav(prev ? "prevCloze" : "nextCloze");
+      return false;
+    }
+
+    document.addEventListener("keydown", event => {
+      if (keyboardNavBlocked(event)) return;
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      if (keyboardStep(event.key === "ArrowLeft" ? -1 : 1)) event.preventDefault();
+    });
+
     $("reset").onclick = () => {
       if (!confirm("确定清空本地复习进度吗？题库不会删除。")) return;
       localStorage.removeItem(storeKey);
