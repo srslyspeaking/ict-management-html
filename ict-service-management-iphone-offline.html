@@ -777,6 +777,21 @@
       background: #fbfcfb;
     }
 
+    .ai-rendered .diagram-card {
+      background: #f7faf9;
+      border-color: #b8d7da;
+    }
+
+    .ai-rendered .diagram-card pre {
+      margin: 0;
+      overflow-x: auto;
+      white-space: pre;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--ink);
+    }
+
     .essay-layout {
       display: grid;
       grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.75fr);
@@ -4793,6 +4808,235 @@
       {c:"21", t:"Drawing Essay", q:"EN: Draw the three-level business-IT alignment model and show how strategic, tactical, and operational alignment differ.", a:"The drawing should distinguish strategic alignment between business strategy and IT strategy, tactical alignment between business projects and IT projects often using architecture, and operational alignment between daily business operations and IT service delivery. Examples can include portfolio decisions at strategic level, architecture/project coordination at tactical level, and service desk/SLA at operational level.", rubric:["Shows strategic/tactical/operational levels","Connects business and IT at each level","Adds suitable examples","Does not collapse all alignment into strategy only"]}
     ];
 
+    const scenarioEssayDrills = [
+      {c:"2", t:"Scenario Essay", q:"EN: Case: FreshBox is a meal-kit company. It uses a supplier portal for farms, warehouse scanning, route optimization, and an app that recommends recipes. Explain where IT supports the value chain, value system, and operational/tactical/strategic benefits.", a:"A strong answer maps warehouse scanning and route optimization to primary value-chain activities such as inbound logistics, operations, outbound logistics, and service. The supplier portal links FreshBox's value chain to farms, so it is part of a value system or supply chain information flow. Operational benefits include fewer picking errors and faster delivery. Tactical benefits include better demand planning and supplier coordination. Strategic benefits may arise if recipe personalization and app data create differentiation or a new customer relationship model.", rubric:["Maps IT to value-chain activities","Recognizes supplier portal as value system/supply chain","Distinguishes operational/tactical/strategic benefits","Avoids saying all digital features are automatically strategic"]},
+      {c:"3", t:"Scenario Essay", q:"EN: Case: MediClinic buys an appointment app, but doctors keep paper notes, patient master data is duplicated, and Wi-Fi in consultation rooms is unreliable. Diagnose the project using the four-domain information systems framework.", a:"The application domain changed because the appointment app was introduced. The business process domain is weak because doctors still use paper notes and appointment workflows are not redesigned. The data domain is weak because patient master data is duplicated and ownership/quality are unclear. The infrastructure domain is weak because Wi-Fi cannot support reliable use. The framework lesson is that information systems management must align process, data, application, and infrastructure, rather than treating the application as the whole system.", rubric:["Identifies all four domains","Uses case facts for each domain","Explains one-domain thinking","Mentions alignment across domains"]},
+      {c:"13", t:"Scenario Essay", q:"EN: Case: CampusCloud wants to move its learning platform to cloud. Lecturers upload videos, students submit assignments, and exam periods create load peaks. Compare IaaS, PaaS, SaaS and discuss cloud sovereignty/control concerns.", a:"IaaS would give CampusCloud infrastructure such as servers, storage, and network capacity while the university keeps more responsibility for platform and application management. PaaS would provide runtime, database, and deployment services for a custom learning application. SaaS would provide a complete learning platform. Exam-period peaks support cloud scalability arguments. Sovereignty/control concerns include data location, legal jurisdiction, provider dependency, security responsibilities, exit options, and whether exam data or student data may leave approved environments.", rubric:["Compares IaaS/PaaS/SaaS accurately","Uses learning-platform case facts","Mentions scalability/load peaks","Discusses sovereignty/control/dependency"]},
+      {c:"13", t:"Scenario Essay", q:"EN: Case: BikeLoop operates shared e-bikes. It tracks rides, battery swaps, repairs, user accounts, and payment disputes. Propose IT service units and volume drivers for at least four IT services.", a:"Suitable service units could include user account-month for identity/payment access, ride transaction for ride processing, bike-device-month for IoT connectivity/support, battery swap event for field operations support, repair ticket for maintenance workflow support, and payment dispute case for customer-service systems. Drivers include number of active users, rides, bikes, battery swaps, repairs, and disputes. A strong answer explains that service units should measure consumption in a way that is understandable, measurable, predictable, and connected to cost or value.", rubric:["Proposes at least four service units","Links units to business volume drivers","Explains why units are suitable","Avoids internal-only units such as server count unless justified"]},
+      {c:"14", t:"Scenario Essay", q:"EN: Case: CityEvents expects 40% more visitors during a summer festival, but ticketing will move fully digital and printed brochures will be discontinued. Explain how IT should translate business forecasts into service planning.", a:"The IT department should not apply the 40% visitor increase to every IT service. Digital ticketing likely increases authentication, ticket validation, network, payment, and support volumes. Printed-brochure services may decrease or disappear. Service planning should translate business volume into specific service consumption: transactions, users, devices, network traffic, support tickets, and printing pages. The plan should combine trend data with business changes, validate assumptions with stakeholders, and reserve capacity for peak periods.", rubric:["Separates business volume from service volume","Uses both visitor growth and digital/paperless changes","Identifies multiple IT services affected","Explains forecast validation and capacity planning"]},
+      {c:"15", t:"Scenario Essay", q:"EN: Case: NorthRetail compares two projects. Project A has higher NPV from checkout automation. Project B has lower NPV but is required for payment-card compliance. Explain the decision logic and how you would present it to governance.", a:"The NPV calculation gives financial value but does not replace governance judgment. Project A appears financially stronger if assumptions are correct, but Project B may be mandatory because compliance can override a lower NPV. A good governance presentation separates financial value, compliance obligation, risk, strategic fit, and timing. The recommendation may be to prioritize B to avoid regulatory/payment risk while scheduling or redesigning A based on available resources and risk mitigation.", rubric:["Uses NPV as financial input","Explains mandatory compliance override","Structures governance criteria","Avoids choosing automatically by highest NPV"]},
+      {c:"16", t:"Scenario Essay", q:"EN: Case: PaySure's mobile banking app has repeated Friday evening slowdowns. Users report incidents, monitoring shows CPU threshold events, and engineers want to add extra capacity immediately. Explain incident, problem, event, and change handling in the right order.", a:"Monitoring threshold events and user reports may trigger incident handling when the service is degraded. Incident handling focuses on restoring service quickly, for example by temporary capacity or workaround. Repeated Friday slowdowns indicate a problem because there is an underlying recurring cause. Problem handling should diagnose root cause using logs, replication, known-error data, and workload analysis. A permanent capacity or architecture fix should go through change management with impact/risk assessment, approval, implementation, back-out plan, and review; emergency procedures may be used only if urgency requires it.", rubric:["Separates event/incident/problem/change","States incident restoration goal","Moves recurring issue to problem handling","Explains controlled change or urgent change logic"]},
+      {c:"17", t:"Scenario Essay", q:"EN: Case: ShopNow promises 'the website will always be fast'. Rewrite this as usable service levels and explain which operational-level metrics might sit behind them.", a:"A usable SLA must be measurable, service-oriented, period-based, and precise. Better service levels could be: 99.9% monthly availability for the checkout service, 95% of checkout page responses below 2 seconds during business hours, and payment confirmation within 10 seconds for 99% of transactions. Operational-level metrics behind these may include database response time, API latency, server CPU thresholds, payment gateway availability, and network latency. The answer should distinguish customer-facing service levels from internal technical operational levels.", rubric:["Rewrites vague promise into measurable SLA targets","Includes period/percentage/threshold","Distinguishes SLA and OLA/technical metrics","Uses ShopNow case facts"]},
+      {c:"18", t:"Scenario Essay", q:"EN: Case: LogiPort uses a commodity toner supplier, a one-time warehouse robotics consultant, a network equipment reseller, and a cloud platform running its routing engine. Classify the suppliers and explain ambiguity.", a:"The toner supplier is usually commodity: standardized, low strategic importance, and easy to replace. The robotics consultant is tactical if important for a project but not deeply integrated long term. The network equipment reseller may be operational or tactical depending on dependence, standardization, and switching options. The cloud routing platform is likely strategic if it runs core routing, is deeply integrated, and switching would be difficult. A strong answer classifies by dependency, business risk, substitutability, and long-term importance, not by product name alone.", rubric:["Classifies all four suppliers","Uses dependency/risk/substitutability criteria","Handles network reseller ambiguity","Avoids company/product stereotypes"]},
+      {c:"19", t:"Scenario Essay", q:"EN: Case: OmniBank launches a mortgage portal. Users need first-line support, architects must connect process/data/application/infrastructure, developers build workflow, finance tracks cost, and suppliers provide identity services. Map the work to IT roles/functions.", a:"First-line user help, password issues, and incidents go to the service desk and operations/support. Architects connect business process, data, application, and infrastructure choices and guide future consistency. Developers build or configure the workflow application. Financial management tracks service/project costs and charge-out or budget impact. Supplier management handles identity-service provider contracts and performance. The CIO or IT management links the portal initiative to business objectives and governance priorities.", rubric:["Maps service desk/operations","Maps architecture and development distinctly","Maps finance and supplier roles","Explains CIO/management alignment role"]},
+      {c:"20", t:"Scenario Essay", q:"EN: Case: SafeInsure wants fraud analytics but its steering committee has only data scientists and infrastructure managers. Use COBIT/governance concepts to redesign decision rights.", a:"The stakeholder need is better fraud detection and risk control. Through COBIT goals cascade it should be translated into enterprise goals, IT-related goals, and process/enabler goals such as data governance, analytics capability, security, portfolio management, and quality. A committee with only technical members lacks decision rights for business value, risk appetite, legal constraints, and benefit realization. A better structure includes business owners, risk/compliance, IT management, data/architecture experts, and user/process representatives. Governance evaluates, directs, and monitors; management executes the analytics work.", rubric:["Uses COBIT goals cascade","Identifies missing business/risk representation","Redesigns committee decision rights","Separates governance from management"]},
+      {c:"21", t:"Scenario Essay", q:"EN: Case: MetroMart's stores depend on POS reliability today. Future growth depends on personalization, loyalty data, and omnichannel delivery. Analyze the case using Strategic Impact Grid, strategic focus points, and operating model.", a:"In the Strategic Impact Grid, MetroMart is likely Strategic mode because current operations depend on reliable POS and future strategy depends on digital personalization and omnichannel data. The strategic focus may combine operational focus for store efficiency and customer focus for loyalty/personalization; the answer should choose based on exam clue words. The operating model likely requires more process/data integration across stores and channels, possibly moving toward Unification or Coordination depending on how standardized store processes are. A strong answer keeps the three models separate.", rubric:["Applies Strategic Impact Grid","Applies focus points with clues","Applies operating model dimensions","Does not mix up the three models"]},
+      {c:"21", t:"Scenario Essay", q:"EN: Case: HealthNet's IT team proposes a patient app that could reshape chronic-care services. Business strategy initially drives the app, but the app also creates new care models. Explain which SAM perspectives may appear and why.", a:"If business strategy drives IT strategy and the app/infrastructure choices, the Technology Transformation perspective is relevant. If the app's IT capabilities create new business opportunities and reshape chronic-care strategy, Competitive Potential becomes relevant. Strategy Execution may also appear when business strategy is implemented through organizational and IT infrastructure. A strong answer names the SAM domains and explains direction of influence rather than only naming perspectives.", rubric:["Names relevant SAM perspectives","Explains driving direction","Uses business strategy/IT strategy/infrastructure domains","Avoids treating SAM as a quadrant classification"]}
+    ];
+
+    const scenarioDrawingEssayDrills = [
+      {c:"2", t:"Scenario Drawing Essay", q:"EN: Case: FreshBox sells meal kits through an app and coordinates farms, warehouse picking, route planning, marketing campaigns, and customer support. Draw the value chain/value system for the case and mark at least four IT-supported points.", a:"The drawing should show FreshBox's internal value chain with primary activities such as inbound logistics from farms, operations/warehouse picking, outbound delivery, marketing and sales through the app, and service/customer support. It should also show supplier farms and delivery partners as part of a wider value system or supply chain. IT-supported points can include supplier portal, warehouse scanning, route optimization, app recommendations, campaign analytics, and support tickets. A strong drawing labels operational, tactical, or strategic effects where relevant.", rubric:["Draws internal value chain","Shows external value system/supply chain links","Marks at least four IT support points","Adds benefit level labels or explanation"]},
+      {c:"3", t:"Scenario Drawing Essay", q:"EN: Case: MediClinic introduces a patient portal, but appointment workflow, patient data ownership, application integration, and Wi-Fi reliability are all issues. Draw the four-domain framework and place the case problems in the correct domains.", a:"The drawing should contain business process, data, application, and infrastructure domains. Appointment workflow belongs to business process. Patient master data ownership/quality belongs to data. Patient portal and integration belong to application. Wi-Fi reliability belongs to infrastructure. A strong answer adds arrows showing that process changes affect data/application needs and applications depend on infrastructure, plus a cross-cutting concern such as security, privacy, compliance, or service level.", rubric:["Draws four domains","Places each case issue correctly","Shows relationships between domains","Adds a cross-cutting concern"]},
+      {c:"13", t:"Scenario Drawing Essay", q:"EN: Case: BikeLoop runs shared e-bikes. Draw IT as a service from customer/business demand to service catalog, service units, volume drivers, resources, and cost.", a:"The drawing should start with business demand such as active users, rides, bikes, battery swaps, repairs, and payment disputes. It should connect demand to service catalog items such as user account service, ride transaction processing, IoT bike connectivity, repair workflow, and payment support. Service units may include account-month, ride transaction, bike-device-month, repair ticket, or dispute case. The diagram should then show required IT resources such as applications, databases, network/API capacity, support staff, and suppliers, ending in resource capacity/cost implications.", rubric:["Starts from business demand","Includes service catalog/service offerings","Uses suitable service units and drivers","Links consumption to resources/cost"]},
+      {c:"13", t:"Scenario Drawing Essay", q:"EN: Case: CampusCloud is deciding between IaaS, PaaS, and SaaS for a learning platform with exam peaks and student-data sovereignty concerns. Draw a cloud responsibility stack and annotate control, provider responsibility, scalability, and sovereignty risks.", a:"The drawing should stack IaaS, PaaS, and SaaS in the correct order. It should show that provider responsibility increases upward while customer control decreases. IaaS leaves more platform/application responsibility with the customer; PaaS shifts runtime/database responsibility; SaaS shifts most application responsibility to the provider. The diagram should annotate exam peak scalability and sovereignty risks such as data location, jurisdiction, exit, security responsibility, and provider dependency.", rubric:["Correct IaaS/PaaS/SaaS order","Shows provider/customer responsibility shift","Marks control versus responsibility trade-off","Adds scalability and sovereignty annotations"]},
+      {c:"14", t:"Scenario Drawing Essay", q:"EN: Case: CityEvents expects visitor growth, digital tickets, more Wi-Fi use, fewer printed brochures, and peak-period support. Draw the service planning chain from business forecast to IT capacity decisions.", a:"The drawing should show business forecasts at the left: visitor growth, digital ticketing, Wi-Fi use, paperless brochures, and festival peak period. These should map to service consumption forecasts: ticket transactions, authentication, network traffic, support tickets, and reduced printing pages. The next layer should show required resources/capacity: servers/cloud capacity, network access points, helpdesk staffing, monitoring, and printing resources. A strong drawing shows that different services move in different directions and that trend analysis must be adjusted by business changes.", rubric:["Maps business forecast to service volume","Shows multiple services with different directions","Links service volume to capacity/resources","Highlights peak-period planning"]},
+      {c:"15", t:"Scenario Drawing Essay", q:"EN: Case: NorthRetail charges business units for checkout IT, store Wi-Fi, and analytics. Draw a charge-out model showing direct costs, indirect costs, cost drivers, service units, standard unit price, and business-unit invoice.", a:"The drawing should show direct costs such as licenses, cloud capacity, support staff, and hardware, plus indirect/shared costs such as management, service desk, and security. These costs should be allocated to services using cost drivers. Each service should have service units, for example store-month, transaction, user-month, or report run. Planned full cost divided by planned volume gives standard unit price. Consumption by business units multiplied by unit price creates the invoice. Good diagrams annotate fairness, predictability, understandability, and verifiability.", rubric:["Shows direct and indirect costs","Shows allocation via cost drivers","Shows service units and standard unit price","Links to business-unit invoice and charge-out principles"]},
+      {c:"16", t:"Scenario Drawing Essay", q:"EN: Case: PaySure has repeated Friday mobile-app slowdowns. Draw the flow from monitoring event and user incident to problem handling and change management for a permanent fix.", a:"The drawing should show monitoring threshold events and user reports leading to incident handling when service is degraded. Incident handling restores service quickly through workaround or temporary capacity. Repeated incidents and event patterns feed problem handling to diagnose root cause. A permanent fix then becomes a change request with impact/risk assessment, approval, implementation, back-out plan, and review. The diagram should not treat every alert as a change or every incident as root-cause removal.", rubric:["Includes monitoring event and user incident","Shows incident restoration","Shows repeated issues triggering problem handling","Shows permanent fix through change management"]},
+      {c:"17", t:"Scenario Drawing Essay", q:"EN: Case: ShopNow checkout uses web tier, application tier, database tier, and a payment gateway. Draw a composite availability model and show where parallel redundancy would improve the weakest tier.", a:"The drawing should show required serial components: web tier, application tier, database tier, and payment gateway. Total availability is the product of required tier availabilities. If the application tier is the weak point, the drawing should duplicate it in parallel/hot standby and label that the tier is unavailable only if both application servers fail. A strong answer marks customer-facing service availability versus internal component availability and shows the series/parallel formulas.", rubric:["Draws required serial tiers","Includes external payment gateway as dependency","Shows parallel redundancy on weakest tier","Labels series and parallel availability logic"]},
+      {c:"18", t:"Scenario Drawing Essay", q:"EN: Case: LogiPort uses toner, a robotics consultant, network equipment reseller, and a cloud routing platform. Draw a supplier classification matrix and place each supplier with justification.", a:"The matrix should use axes such as business importance/risk and substitutability/dependency. Toner should be low importance and easy to replace, so commodity. Robotics consultant may be tactical: important for a project but not long-term integrated. Network reseller can be operational or tactical depending on dependency. Cloud routing platform is strategic if core routing depends on it and switching is difficult. The drawing should include short notes explaining ambiguous placements.", rubric:["Uses meaningful axes","Places four suppliers","Explains tactical/strategic ambiguity","Classifies by dependency/risk rather than product name only"]},
+      {c:"20", t:"Scenario Drawing Essay", q:"EN: Case: SafeInsure wants fraud analytics. Draw a COBIT goals cascade from stakeholder need to enterprise goals, IT-related goals, and enabler/process goals. Include governance decision rights.", a:"The cascade should start with stakeholder need: reduce fraud and manage risk. Enterprise goals may include risk optimization, compliance, customer trust, and efficient claims handling. IT-related goals may include information quality, analytics capability, security, agility, and reliable services. Enabler/process goals may include data governance, architecture, portfolio management, project management, security, and quality management. The drawing should also show that business/risk/compliance representatives participate in governance decision rights, not only technical teams.", rubric:["Correct cascade order","Uses fraud analytics case content","Includes IT-related and enabler/process goals","Adds governance decision rights"]},
+      {c:"20", t:"Scenario Drawing Essay", q:"EN: Case: A public transport agency has a board, CIO, business process owners, IT operations, and external vendors. Draw governance versus management responsibilities using Evaluate, Direct, Monitor and plan-build-run/support execution.", a:"The drawing should separate governance from management. The board/CIO governance layer should show Evaluate, Direct, and Monitor: assess proposals and obligations, set principles and priorities, and monitor performance/conformance. The management layer should show planning, building, running, supporting, incident/change/service management, and vendor execution. Business process owners should connect governance priorities to business value, while vendors support delivery under contracts and service levels.", rubric:["Separates governance and management layers","Shows Evaluate/Direct/Monitor","Shows plan/build/run/support execution","Places board/CIO/business owners/vendors appropriately"]},
+      {c:"21", t:"Scenario Drawing Essay", q:"EN: Case: MetroMart depends on POS reliability today and future personalization/omnichannel data tomorrow. Draw the Strategic Impact Grid and place MetroMart plus one contrast example.", a:"The grid should have current operational dependence on one axis and future strategic importance on the other. MetroMart should be placed in Strategic mode if both POS reliability today and future personalization/omnichannel data are high. A contrast example could be a small office tool in Support mode, a stable factory control system in Factory mode, or a future digital-tax portal in Turnaround mode. The drawing must label Support, Factory, Turnaround, and Strategic correctly.", rubric:["Correct axes","Correct quadrant labels","Places MetroMart with case justification","Adds a meaningful contrast example"]},
+      {c:"21", t:"Scenario Drawing Essay", q:"EN: Case: HealthNet starts from a business strategy for chronic-care services, then designs IT strategy, patient app, and infrastructure. Later the app creates new business opportunities. Draw the SAM domains and indicate two possible alignment perspectives.", a:"The drawing should show the four SAM domains: business strategy, IT strategy, organizational infrastructure/processes, and IT infrastructure/processes. One arrow set should show Technology Transformation: business strategy drives IT strategy and then IT infrastructure. Another arrow set can show Competitive Potential: IT strategy/capability opens new business strategy opportunities. A strong drawing labels strategic fit and functional integration and does not confuse SAM with Strategic Impact Grid.", rubric:["Shows four SAM domains","Indicates Technology Transformation","Indicates Competitive Potential","Labels strategic fit/functional integration"]},
+      {c:"21", t:"Scenario Drawing Essay", q:"EN: Case: FranchiseCo has standardized store processes, local customer data, and later wants shared loyalty data while preserving local autonomy. Draw the operating model quadrant and show the likely shift.", a:"The quadrant should use process standardization and process/data integration as axes. The initial situation is close to Replication: standardized store processes but low shared data integration. The future shared loyalty data creates movement toward Coordination if process autonomy remains, or toward Unification if both process standardization and data integration become high. The drawing should label Diversification, Replication, Coordination, and Unification and use arrows to show the shift.", rubric:["Correct axes and quadrant labels","Places initial Replication case","Shows shift toward Coordination or Unification","Explains standardization versus integration"]},
+      {c:"21", t:"Scenario Drawing Essay", q:"EN: Case: A chocolatier competes through premium recipes, rapid product innovation, efficient plants, and close relationships with luxury clients. Draw the strategic focus points and mark which clue words support financial, operational, product, and customer focus.", a:"The drawing can be a four-cell map of financial focus, operational focus, product focus, and customer focus. Premium recipes and rapid innovation point to product focus. Efficient plants point to operational focus. Close luxury-client relationships point to customer focus. Financial focus would be supported by margin, cost, ROI, or asset-efficiency clues. A strong answer shows that focus depends on wording, not the company name alone, and can discuss a dominant focus plus secondary tensions.", rubric:["Draws four focus points","Maps clue words to focus categories","Identifies product/customer/operational tensions","Avoids company-name stereotype"]},
+      {c:"17", t:"Scenario Drawing Essay", q:"EN: Case: A SaaS helpdesk vendor promises customer support, app uptime, database response, and network latency. Draw which metrics belong in customer SLA and which belong in internal operational levels.", a:"The drawing should split customer-facing service levels from internal operational levels. Customer SLA examples include helpdesk service availability, support response time, ticket resolution targets, and application uptime for users. Internal operational levels may include database response time, network latency, CPU thresholds, backup success, and provider API availability. A strong drawing shows that operational metrics support customer service levels but are not always the right wording for customers.", rubric:["Separates SLA from operational levels","Places customer-facing metrics correctly","Places technical metrics correctly","Shows dependency/support relationship"]}
+    ];
+
+    const extraScenarioEssayDrills = [
+      {c:"13", t:"Scenario Essay", q:"EN: Case: SportArena expects ticket scans, Wi-Fi sessions, food-order transactions, and security-camera storage to grow differently during events. Explain why one business-volume forecast is not enough for IT service planning.", a:"A strong answer explains that event attendance is only the business-volume starting point. Ticket scans, Wi-Fi sessions, food orders, support calls, and camera storage each have their own service consumption driver. Some may grow linearly with visitors, some may be step-based because of access-point or storage thresholds, and some may be peak-load driven. IT service planning should translate each business driver into service volume, capacity, resource, cost, and SLA implications.", rubric:["Separates business volume and service volume","Names multiple service-specific drivers","Mentions linear/step/peak-load patterns","Connects to capacity/cost/SLA planning"]},
+      {c:"15", t:"Scenario Essay", q:"EN: Case: DataCo charges analytics costs by number of reports, but some reports take seconds while others run overnight. Explain the charge-out fairness problem and redesign the service unit.", a:"Charging only by report count is understandable but may be unfair if resource consumption differs strongly. Overnight reports consume more compute, storage, support and possibly license capacity than simple reports. A better service unit could be compute-hour, data volume processed, report complexity class, or a hybrid unit such as standard report versus heavy report. The redesign should balance fairness, predictability, verifiability, and simplicity; a perfectly accurate formula that users cannot understand is also weak.", rubric:["Identifies fairness weakness","Proposes better service unit/cost driver","Mentions trade-off with understandability/predictability","Uses charge-out principles"]},
+      {c:"17", t:"Scenario Essay", q:"EN: Case: QuickMed's patient portal depends on authentication, appointment booking, lab-result database, and an external payment provider. Explain why a component SLA may not equal the end-user service SLA.", a:"The end-user service depends on several required components. Even if each component has a high availability, serial dependencies reduce the combined service availability. A component SLA such as database uptime or payment provider uptime is not enough unless it is linked to the user-facing portal service. The IT manager should define customer-facing service levels, identify operational-level metrics behind them, calculate composite availability where needed, and clarify exclusions, measurement period, planned maintenance, and provider dependencies.", rubric:["Explains serial dependency","Distinguishes component SLA and user-facing SLA","Mentions composite availability","Mentions measurement/exclusion/provider dependency"]},
+      {c:"20", t:"Scenario Essay", q:"EN: Case: GreenGrid has many IT projects but no clear owner for benefits after delivery. Use COBIT/governance ideas to explain the risk and propose controls.", a:"The risk is that projects are approved and built without clear accountability for business value realization. COBIT-style governance should translate stakeholder needs into enterprise goals, IT-related goals, and measurable process/enabler goals. Decision rights should assign business owners for benefits, IT owners for delivery capability, and governance bodies for evaluating, directing, and monitoring value, risk, resources, and conformance. Controls include portfolio prioritization, benefit metrics, stage gates, post-implementation review, and reporting to business stakeholders.", rubric:["Identifies benefit-realization risk","Uses COBIT goals cascade/governance language","Assigns business and IT responsibilities","Proposes concrete controls"]},
+      {c:"21", t:"Scenario Essay", q:"EN: Case: PharmaOne has globally standardized quality processes, but each country keeps local market data because regulation differs. Later, headquarters wants shared product and batch data. Analyze the operating-model tension.", a:"The current model may resemble Replication if processes are standardized globally but data remains local. Regulation-driven local data reduces integration. The plan for shared product and batch data increases integration pressure, possibly moving toward Coordination if local processes remain partly different or toward Unification if both data and process standardization become high. The architecture implication is stronger master-data governance, shared data definitions, integration platforms, and decision rights that handle local regulatory exceptions.", rubric:["Identifies initial operating-model logic","Explains integration pressure","Distinguishes Coordination and Unification","Connects to architecture/governance implications"]}
+    ];
+
+    const extraScenarioDrawingEssayDrills = [
+      {c:"13", t:"Scenario Drawing Essay", q:"EN: Case: SportArena runs concerts and football matches. Draw the chain from event type and visitors to ticket scans, Wi-Fi sessions, food-order transactions, camera storage, IT resources, and cost pattern.", a:`Reference diagram:
+
+[Event type + visitors]
+ concerts / football / peak hours
+        |
+        v
+[Service volume drivers]
+ ticket scans | Wi-Fi sessions | food orders | camera hours/storage | support contacts
+        |
+        v
+[Cost-volume pattern]
+ linear: scans/orders | step: access points/storage tiers | peak load: authentication/network
+        |
+        v
+[Resources and cost]
+ cloud capacity | network APs | storage | monitoring | support staff
+
+Explanation: The point of the drawing is to show that one business volume, visitors, must be translated into several service volumes. Different services may follow different cost-volume patterns, so capacity and cost planning cannot simply add one percentage to all IT services.`, rubric:["Starts with business event/visitor driver","Shows several service-volume drivers","Labels linear/step/peak patterns","Links to resources and cost"]},
+      {c:"14", t:"Scenario Drawing Essay", q:"EN: Case: BlueHotel asks IT for an AI guest-chatbot that is not in the catalog. Draw the request route from business idea to decision, service planning, project/change handling, and later catalog entry.", a:`Reference diagram:
+
+[Business idea: AI guest chatbot]
+        |
+        v
+[Service desk / intake]
+ catalog item? ---- no ----> [Out-of-catalog validation]
+        |                         |
+       yes                        v
+ [standard request]       [Business value + risk + privacy + cost]
+                                  |
+                                  v
+                         [Planning / approval]
+                                  |
+                                  v
+                         [Project or normal change]
+                                  |
+                                  v
+                         [Operate + SLA + support model]
+                                  |
+                                  v
+                         [Possible future catalog entry]
+
+Explanation: This is not a simple service request because it is outside the catalog and affects resources, privacy, cost, support and service levels.`, rubric:["Shows catalog decision point","Routes out-of-catalog request to validation","Includes approval/planning/project or change","Shows later operation/catalog entry"]},
+      {c:"15", t:"Scenario Drawing Essay", q:"EN: Case: DataCo wants to redesign analytics charge-out because report count is unfair. Draw a better costing model using cost object, cost driver, service unit, standard price, and invoice.", a:`Reference diagram:
+
+[Cost object]
+ analytics reporting service
+        |
+        v
+[Resource costs]
+ cloud compute | data storage | licenses | support staff
+        |
+        v
+[Cost drivers]
+ compute-hour | GB processed | report complexity | user-month
+        |
+        v
+[Service units]
+ standard report | heavy report | compute-hour
+        |
+        v
+standard price = planned full cost / planned service units
+        |
+        v
+[Business-unit invoice]
+ consumption x standard price
+
+Explanation: The redesign improves fairness because it links charge-out to resource consumption, but it must remain understandable, predictable, verifiable and consistent.`, rubric:["Shows cost object/resource costs","Shows cost drivers","Defines better service units","Links to invoice and charge-out principles"]},
+      {c:"16", t:"Scenario Drawing Essay", q:"EN: Case: CyberMart discovers an active security vulnerability on Friday afternoon. Draw the urgent-change path and show how it differs from normal change and post-review.", a:`Reference diagram:
+
+[Security vulnerability]
+        |
+        v
+[Impact + urgency assessment]
+        |
+        v
+urgent? ---- yes ----> [Emergency approval / urgent change]
+        |                         |
+       no                         v
+ [Normal change]          [Implement temporary or permanent fix]
+ assessment/approval               |
+ testing/back-out                  v
+                            [Restore / protect service]
+                                      |
+                                      v
+                              [Post-implementation review]
+                              document risk, result, follow-up normal change if needed
+
+Explanation: Urgent change can speed up approval because risk/time pressure is high, but it still needs assessment, documentation, implementation control and review.`, rubric:["Shows urgency decision","Distinguishes urgent and normal change","Includes implementation and back-out/review logic","Avoids treating urgent change as no control"]},
+      {c:"17", t:"Scenario Drawing Essay", q:"EN: Case: QuickMed patient portal depends on authentication, appointment service, lab-result database, and external payment. Draw customer-facing SLA versus component/operational levels and show composite availability dependency.", a:`Reference diagram:
+
+Customer-facing SLA:
+[Patient portal availability] [Booking response time] [Lab result access time]
+             |
+             v
+Composite service dependency:
+[Authentication] -> [Appointment service] -> [Lab database] -> [External payment]
+ Aservice = Aauth x Abooking x Alab x Apayment
+             |
+             v
+Operational/component metrics:
+ login latency | DB response | API uptime | payment-provider SLA | network latency
+
+Explanation: Customer SLA should describe the patient-facing service. Component metrics support it, but component uptime alone does not equal end-user service availability.`, rubric:["Separates customer SLA and component metrics","Draws serial dependency","Includes composite availability formula","Uses case components correctly"]},
+      {c:"18", t:"Scenario Drawing Essay", q:"EN: Case: UniLab uses a cloud research-data platform, commodity laptops, a niche genome-analysis vendor, and a one-off audit firm. Draw a supplier classification matrix and explain where each goes.", a:`Reference diagram:
+
+Business importance / dependency
+High ^
+     | [Strategic] cloud research-data platform
+     |             core data, high lock-in, compliance risk
+     |
+     | [Tactical] niche genome-analysis vendor
+     |             specialist capability, project/research importance
+     |
+     | [Tactical/Operational] one-off audit firm
+     |             important but replaceable if many qualified firms exist
+     |
+Low  | [Commodity] laptops
+     +-------------------------------------------------> Difficulty to substitute
+       Easy                                      Hard
+
+Explanation: Classification depends on dependency, business risk, substitutability and integration, not on whether the supplier sounds technical.`, rubric:["Uses two meaningful axes","Places four suppliers","Explains strategic/tactical/commodity logic","Handles audit ambiguity"]},
+      {c:"20", t:"Scenario Drawing Essay", q:"EN: Case: SmartCity must decide on a traffic-sensor platform involving mayor's office, transport department, CIO, security officer, architects, and vendors. Draw governance decision rights versus management execution.", a:`Reference diagram:
+
+Governance / decision rights:
+[Mayor office] [Transport business owner] [CIO] [Security/compliance]
+       | evaluate value, risk, legal constraints, priorities
+       v
+[Steering committee]
+ Evaluate -> Direct -> Monitor
+       |
+       v
+Management execution:
+[Architecture] -> [Project delivery] -> [Operations/support] -> [Vendor management]
+ design standards    build/deploy       SLA/incident/change    contracts/performance
+
+Explanation: Business and risk actors must be part of governance. Architects and vendors advise or execute, but should not alone decide business value and public-risk priorities.`, rubric:["Shows governance actors","Shows Evaluate/Direct/Monitor","Shows management execution flow","Separates advice/execution from decision rights"]},
+      {c:"21", t:"Scenario Drawing Essay", q:"EN: Case: NeoBank's business strategy is instant digital lending. IT proposes AI scoring, API banking, and cloud-native infrastructure. Draw SAM and show whether the case is Strategy Execution, Technology Transformation, or Competitive Potential.", a:`Reference diagram:
+
+SAM domains:
+[Business strategy: instant digital lending] <----> [IT strategy: AI scoring + APIs]
+          | strategic fit                                      | strategic fit
+          v                                                    v
+[Organization/processes: risk + loan ops] <----> [IT infrastructure: cloud-native platform]
+
+Likely perspective:
+Business strategy -> IT strategy -> IT infrastructure = Technology Transformation
+
+If AI/API capability creates a new lending business model:
+IT strategy -> Business strategy -> Organization = Competitive Potential
+
+Explanation: The answer must show the direction of influence. SAM is not just naming four boxes.`, rubric:["Draws four SAM domains","Identifies likely Technology Transformation","Mentions Competitive Potential condition","Explains direction of influence"]},
+      {c:"21", t:"Scenario Drawing Essay", q:"EN: Case: FoodFast has independent country units, shared customer app data, and different delivery processes by country. Draw the operating model and decide whether it is Diversification, Coordination, Replication, or Unification.", a:`Reference diagram:
+
+Process / data integration
+High ^
+     | [Coordination] FoodFast likely here
+     | shared customer app data, but country processes differ
+     |
+     | [Unification]
+     | shared data + standardized global process
+Low  | [Diversification]        [Replication]
+     | independent units         standardized processes, local data
+     +-------------------------------------------------> Process standardization
+       Low                                      High
+
+Explanation: Shared customer data means integration is high. Different country delivery processes mean standardization is lower, so Coordination is more defensible than Unification.`, rubric:["Correct axes","Places FoodFast in Coordination","Explains shared data vs different processes","Distinguishes from Replication/Unification"]},
+      {c:"2", t:"Scenario Drawing Essay", q:"EN: Case: StyleHub designs clothes, outsources manufacturing, sells through stores and an app, and uses customer data to decide collections. Draw the value system and mark where IT creates tactical and strategic benefits.", a:`Reference diagram:
+
+[Design team] -> [Outsourced manufacturing] -> [Warehousing] -> [Stores + mobile app] -> [After-sales service]
+      ^                    ^                       ^                 ^                  ^
+ trend analytics      supplier portal          inventory system   recommendation app   service CRM
+      |
+      v
+[Customer data / collection planning]
+
+Tactical benefit: better collection and inventory decisions
+Strategic benefit: data-driven fashion model / customer intimacy if hard to copy
+
+Explanation: The drawing should show connected value chains across firms, not only StyleHub's internal departments.`, rubric:["Draws cross-firm value system","Marks IT support points","Identifies tactical benefit","Identifies possible strategic benefit with caveat"]}
+    ];
+
+    essayCore.push(...scenarioEssayDrills);
+    essayCore.push(...extraScenarioEssayDrills);
+    essayCore.push(...scenarioDrawingEssayDrills);
+    essayCore.push(...extraScenarioDrawingEssayDrills);
     essayCore.push(...drawingEssayDrills);
 
     function splitSourceEssay(question, answer) {
@@ -7129,13 +7373,348 @@
       )).join("");
     }
 
+    function diagramSketchFor(item) {
+      if (!isDrawingEssay(item)) return "";
+      const text = norm(`${item.q || ""} ${item.a || ""} ${item.t || ""}`);
+      if (containsAny(text, ["porter", "value chain", "freshbox", "meal-kit", "value system", "supply chain"])) {
+        return `Reference diagram / 参考图
+
+Suppliers / farms
+        |
+        v
+[Inbound logistics] -> [Operations / picking] -> [Outbound delivery] -> [Marketing & sales] -> [Service]
+        ^                       ^                         ^                    ^                 ^
+ supplier portal          warehouse scan             route planning       app analytics       support tickets
+
+Support activities across the chain:
+[Firm infrastructure] [HR management] [Technology development] [Procurement]
+
+Key point: internal value chain + external value system/supply chain.`;
+      }
+      if (containsAny(text, ["four-domain", "four domains", "information systems framework", "mediclinic", "business process, data, application", "patient portal"])) {
+        return `Reference diagram / 参考图
+
+                Cross-cutting concern: security / privacy / SLA / cost
+        ---------------------------------------------------------------
+        |                                                             |
+[Business process] <-------> [Data] <-------> [Application] <-------> [Infrastructure]
+ appointments / workflow      master data       patient portal         Wi-Fi / devices
+ paper notes still used        ownership         integration           reliability
+
+Key point: do not solve an application problem while ignoring process, data and infrastructure.`;
+      }
+      if (containsAny(text, ["it as a service", "bikeloop", "service catalog", "service units", "service unit", "volume driver"])) {
+        return `Reference diagram / 参考图
+
+[Business demand]
+ active users / rides / bikes / repairs / disputes
+        |
+        v
+[Service catalog]
+ account service | ride processing | IoT bike connectivity | repair workflow | payment support
+        |
+        v
+[Service units]
+ account-month | ride transaction | bike-device-month | repair ticket | dispute case
+        |
+        v
+[Resources and cost]
+ apps + databases + APIs + support staff + cloud/network + suppliers
+
+Key point: planning and costing start from service consumption, not from hardware alone.`;
+      }
+      if (containsAny(text, ["iaas", "paas", "saas", "campuscloud", "cloud responsibility", "cloud service model", "sovereignty"])) {
+        return `Reference diagram / 参考图
+
+More provider responsibility
+        ^
+        |
+[SaaS] Complete learning application
+       provider manages most application/platform/infrastructure
+       customer has least control
+
+[PaaS] Runtime + database + deployment platform
+       customer builds learning application
+
+[IaaS] Compute + storage + network
+       customer manages OS/platform/application
+       customer keeps more control
+        |
+        v
+More customer control
+
+Annotate: exam load peaks = scalability; student/exam data = sovereignty, jurisdiction, exit risk.`;
+      }
+      if (containsAny(text, ["it4it", "strategy to portfolio", "requirement to deploy", "request to fulfill", "detect to correct"])) {
+        return `Reference diagram / 参考图
+
+[Strategy to Portfolio] -> [Requirement to Deploy] -> [Request to Fulfill] -> [Detect to Correct]
+ plan/select services       build/deploy changes      user requests        monitor/fix operation
+
+Key point: this is IT value-chain logic, not Porter's business value chain.`;
+      }
+      if (containsAny(text, ["service planning", "cityevents", "business forecast", "capacity decisions", "forecast to it capacity"])) {
+        return `Reference diagram / 参考图
+
+[Business forecast]
+ visitor growth | digital tickets | Wi-Fi use | fewer brochures | peak period
+        |
+        v
+[Service consumption forecast]
+ ticket transactions UP | authentication UP | network traffic UP | support tickets UP | printing DOWN
+        |
+        v
+[Capacity/resource plan]
+ cloud/server capacity | access points | monitoring | helpdesk staffing | less printing stock
+
+Key point: different IT services can move in different directions.`;
+      }
+      if (containsAny(text, ["charge-out", "cost recovery", "direct costs", "indirect costs", "standard unit", "business-unit invoice", "northretail"])) {
+        return `Reference diagram / 参考图
+
+[Direct costs]        [Indirect/shared costs]
+ licenses/cloud        management/security/service desk
+       \\                    /
+        \\                  /
+         v                v
+       [Full service cost] --allocate via cost drivers--> [Services]
+                                                       checkout | Wi-Fi | analytics
+                                                            |
+                                                            v
+                                  [Service units] store-month | transaction | user-month
+                                                            |
+                                                            v
+                         standard unit price = planned full cost / planned volume
+                                                            |
+                                                            v
+                                  business-unit invoice = consumption x unit price
+
+Check: understandable, fair, predictable, verifiable, consistent.`;
+      }
+      if (containsAny(text, ["event handling", "incident handling", "problem handling", "change management", "paysure", "recurring outage", "slowdowns"])) {
+        return `Reference diagram / 参考图
+
+[Monitoring threshold event]       [User incident report]
+              \\                         /
+               \\                       /
+                v                     v
+              [Incident handling]
+              restore service quickly / workaround
+                         |
+             repeated incidents or event pattern
+                         v
+                 [Problem handling]
+                 diagnose root cause
+                         |
+                 permanent fix needed
+                         v
+                [Change management]
+ impact/risk -> approval -> implementation -> back-out/review
+
+Key point: incident restores service; problem removes root cause; change controls the permanent fix.`;
+      }
+      if (containsAny(text, ["availability", "hot standby", "parallel", "serial", "shopnow", "web tier", "application tier", "database tier", "payment gateway"])) {
+        return `Reference diagram / 参考图
+
+Basic serial service:
+[Web tier] -> [Application tier] -> [Database tier] -> [Payment gateway]
+ Availability = Aweb x Aapp x Adb x Apay
+
+With parallel application tier:
+              +--> [App server A] --+
+[Web tier] ---|                     |---> [Database tier] -> [Payment gateway]
+              +--> [App server B] --+
+
+Application tier availability = 1 - (1 - Aapp)^2
+Key point: serial components multiply availability; parallel components multiply unavailability.`;
+      }
+      if (containsAny(text, ["supplier classification", "supplier classification matrix", "logiport", "toner", "robotics consultant", "network equipment", "cloud routing"])) {
+        return `Reference diagram / 参考图
+
+Business importance / dependency
+High ^
+     |  [Strategic] cloud routing platform
+     |              core, integrated, hard to replace
+     |
+     |  [Tactical] robotics consultant / maybe network reseller
+     |              important project, limited long-term integration
+     |
+     |  [Commodity] toner
+     |              standardized, easy to replace
+Low  +--------------------------------------------------> Hard to substitute / switch
+      Easy to substitute
+
+Key point: classify by dependency, business risk, substitutability and duration.`;
+      }
+      if (containsAny(text, ["cobit", "goals cascade", "safeinsure", "fraud analytics", "stakeholder need", "enabler"])) {
+        return `Reference diagram / 参考图
+
+[Stakeholder need]
+ reduce fraud / manage risk / protect trust
+        |
+        v
+[Enterprise goals]
+ risk optimization | compliance | customer trust | efficient claims
+        |
+        v
+[IT-related goals]
+ information quality | analytics capability | security | reliable services
+        |
+        v
+[Enabler / process goals]
+ data governance | architecture | portfolio | project management | security | quality
+
+Governance decision rights: business + risk/compliance + IT, not technical team only.`;
+      }
+      if (containsAny(text, ["iso/iec 38500", "evaluate", "direct", "monitor", "governance versus management", "public transport", "plan-build-run"])) {
+        return `Reference diagram / 参考图
+
+Governance layer: Board / CIO / business owners
+        [Evaluate] -> assess proposals, risks, obligations
+        [Direct]   -> set principles, priorities, decision rights
+        [Monitor]  -> check performance and conformance
+             |
+             v
+Management execution layer
+        [Plan] -> [Build] -> [Run / Support]
+          service planning   projects     incident/change/SLA/vendor execution
+
+Key point: governance decides direction and monitors; management executes.`;
+      }
+      if (containsAny(text, ["strategic impact grid", "metromart", "pos reliability", "support mode", "factory mode", "turnaround mode", "strategic mode"])) {
+        return `Reference diagram / 参考图
+
+Future strategic impact of IT
+High ^
+     | [Turnaround]                 [Strategic]
+     | future digital change        MetroMart: POS reliability today
+     | high, current low            + personalization tomorrow
+     |
+Low  | [Support]                    [Factory]
+     | office tool                  stable operations depend on IT
+     +-------------------------------------------------> Current operational dependence
+       Low                                           High
+
+Key point: place the case by current dependence and future strategic importance.`;
+      }
+      if (containsAny(text, ["strategic alignment model", "sam", "healthnet", "technology transformation", "competitive potential", "business strategy", "it strategy"])) {
+        return `Reference diagram / 参考图
+
+External strategy domains:
+[Business strategy] <------ functional integration ------> [IT strategy]
+       | strategic fit                                      | strategic fit
+       v                                                    v
+[Organizational infrastructure/processes] <------------> [IT infrastructure/processes]
+
+Perspective 1: Technology Transformation
+Business strategy -> IT strategy -> IT infrastructure
+
+Perspective 2: Competitive Potential
+IT strategy/capability -> Business strategy -> Organization/process change
+
+Key point: SAM is about alignment paths and driving direction, not a quadrant placement.`;
+      }
+      if (containsAny(text, ["operating model", "franchiseco", "diversification", "replication", "coordination", "unification", "standardized store processes", "shared loyalty data"])) {
+        return `Reference diagram / 参考图
+
+Process / data integration
+High ^
+     | [Coordination]             [Unification]
+     | shared data, local process shared data + standardized process
+     |      ^ possible shift
+     |
+Low  | [Diversification]          [Replication]
+     | autonomous units           standardized store process, local data
+     |                             initial FranchiseCo position
+     +-------------------------------------------------> Process standardization
+       Low                                           High
+
+Key point: Replication can move toward Coordination when shared data increases but local autonomy remains.`;
+      }
+      if (containsAny(text, ["focus points", "strategic focus", "financial focus", "operational focus", "product focus", "customer focus", "chocolatier"])) {
+        return `Reference diagram / 参考图
+
+[Financial focus]      clues: margin, ROI, cost, asset efficiency
+[Operational focus]    clues: efficient plants, automation, stable distribution
+[Product focus]        clues: premium recipes, rapid product innovation
+[Customer focus]       clues: luxury-client relationship, intimacy, experience
+
+Dominant answer depends on wording:
+premium recipes + rapid innovation -> Product focus
+close luxury clients -> Customer focus
+efficient plants -> Operational focus`;
+      }
+      if (containsAny(text, ["customer sla", "operational levels", "database response", "network latency", "saas helpdesk", "service levels"])) {
+        return `Reference diagram / 参考图
+
+Customer-facing SLA
+ [helpdesk availability] [support response time] [ticket resolution target] [app uptime]
+               |                    |                       |              |
+               v                    v                       v              v
+Internal operational levels / technical metrics
+ [database response] [network latency] [CPU threshold] [backup success] [provider API uptime]
+
+Key point: technical metrics support the SLA but are not always the customer's SLA wording.`;
+      }
+      if (containsAny(text, ["three-level", "strategic, tactical, and operational alignment", "business-it alignment"])) {
+        return `Reference diagram / 参考图
+
+[Strategic alignment]
+ business strategy <-> IT strategy
+ portfolio / long-term direction
+
+[Tactical alignment]
+ business projects <-> IT projects
+ architecture / roadmap / project coordination
+
+[Operational alignment]
+ daily business operations <-> IT service delivery
+ service desk / SLA / incident / request handling`;
+      }
+      return `Reference diagram / 参考图
+
+[Case facts / clue words]
+        |
+        v
+[Choose the correct course model]
+        |
+        v
+[Draw axes, domains, layers or process steps]
+        |
+        v
+[Place case examples + explain why]
+
+Key point: the diagram must contain both the model structure and the case-specific labels.`;
+    }
+
+    function inlineDiagramFromModel(model) {
+      const match = String(model || "").match(/Reference diagram:\s*([\s\S]*?)(?:\n\s*Explanation:|$)/i);
+      if (!match) return "";
+      return `Reference diagram / 参考图\n\n${match[1].trim()}`;
+    }
+
+    function removeInlineDiagramFromModel(model) {
+      return String(model || "")
+        .replace(/Reference diagram:\s*[\s\S]*?\n\s*Explanation:/i, "Explanation:")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+    }
+
     function referenceFeedbackHtml(item, record) {
       let model = record?.modelAnswer || "";
       if (!model && /^参考答案[:：]/.test(record?.feedback || "")) {
         model = String(record.feedback).replace(/^参考答案[:：]\s*/i, "").split(/\n\s*评分要点[:：]/)[0].trim();
       }
       if (!model) return "";
-      return formattedReviewHtml(`参考答案 / Reference answer\n${model}\n\n中文版理解 / Chinese version\n${chineseStudyVersion(item, model)}`);
+      const cleanModel = removeInlineDiagramFromModel(model);
+      const diagram = inlineDiagramFromModel(model) || diagramSketchFor(item);
+      return formattedReviewHtml([
+        "中文版理解 / Chinese version",
+        chineseStudyVersion(item, cleanModel),
+        diagram ? `参考图 / Diagram sketch\n${diagram}` : "",
+        "英文参考答案 / English reference answer",
+        cleanModel
+      ].filter(Boolean).join("\n\n"));
     }
 
     const chinesePhraseMap = [
@@ -7384,7 +7963,7 @@
       ];
       const matched = patterns.filter(pattern => containsAny(n, pattern.keys));
       const direct = translateCoursePhrase(raw);
-      if (matched.length) return `${matched.map(pattern => pattern.zh).join(" ")} 原句里的具体表达可以理解为：${direct}。`;
+      if (matched.length) return matched.map(pattern => pattern.zh).join(" ");
       return `这句话的大意是：${direct}。`;
     }
 
@@ -7459,10 +8038,11 @@
       if (terms.length) lines.push(`关键词中文：${terms.map(term => `${term} = ${translateCoursePhrase(term)}`).join("；")}。`);
       if (ideas.length) {
         lines.push("");
-        lines.push("逐句中文拆解（按 reference answer 的逻辑来理解）");
+        lines.push("中文拆解（按 reference answer 的逻辑来理解）");
         ideas.forEach((idea, index) => {
-          lines.push(`${index + 1}. 英文要点：${idea}`);
-          lines.push(`   中文理解：${lineChineseExplanation(idea, item)}`);
+          const keyTerms = extractAnswerTerms(idea).slice(0, 4);
+          const suffix = keyTerms.length ? ` 关键词：${keyTerms.join(" / ")}。` : "";
+          lines.push(`${index + 1}. ${lineChineseExplanation(idea, item)}${suffix}`);
         });
       }
       lines.push("");
@@ -8659,11 +9239,20 @@
         .trim();
     }
 
+    function looksLikeDiagramBlock(block) {
+      const text = String(block || "");
+      return /(\[[^\]]+\]\s*[-=]+>|[-=]+>\s*\[[^\]]+\]|\+[-+]{3,}|[│┌┐└┘─]|quadrant|axis:|x-axis|y-axis)/i.test(text)
+        && text.split("\n").length >= 3;
+    }
+
     function formattedReviewHtml(text) {
       const clean = cleanMarkdownText(text);
       const blocks = clean.split(/\n\s*\n/).filter(Boolean);
       if (!blocks.length) return `<div class="review-card"><strong>没有输出</strong><small>请稍后重试。</small></div>`;
       return `<div class="ai-rendered">${blocks.map(block => {
+        if (looksLikeDiagramBlock(block)) {
+          return `<div class="review-card diagram-card"><pre>${escapeHtml(block)}</pre></div>`;
+        }
         const lines = block.split("\n").map(line => line.trim()).filter(Boolean);
         if (lines.length === 1 && /^(\d+\.?\s*)?[\u4e00-\u9fa5A-Za-z].{0,36}$/.test(lines[0])) {
           return `<h4>${escapeHtml(lines[0].replace(/^\d+\.?\s*/, ""))}</h4>`;
