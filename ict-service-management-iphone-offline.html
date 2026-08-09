@@ -7160,6 +7160,7 @@ Explanation: The drawing should show connected value chains across firms, not on
           if (realIndex === record.choice && realIndex !== item.a) btn.classList.add("wrong");
         }
         btn.textContent = `${String.fromCharCode(65 + displayIndex)}. ${item.o[realIndex]}`;
+        btn.title = `快捷键 ${displayIndex + 1}`;
         btn.onclick = () => {
           if (state.retake.quiz === item.id) delete state.retake.quiz;
           sessionSeen.quiz.add(item.id);
@@ -10041,8 +10042,7 @@ Key point: the diagram must contain both the model structure and the case-specif
       save();
       renderView();
     };
-    function keyboardNavBlocked(event) {
-      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return true;
+    function keyboardEditingTarget(event) {
       const target = event.target;
       if (!target) return false;
       const tag = target.tagName;
@@ -10051,11 +10051,36 @@ Key point: the diagram must contain both the model structure and the case-specif
       return false;
     }
 
+    function keyboardNavBlocked(event) {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return true;
+      return keyboardEditingTarget(event);
+    }
+
     function clickVisibleNav(id) {
       const button = $(id);
       if (!button || button.disabled || button.hidden) return false;
       button.click();
       return true;
+    }
+
+    function keyboardChooseQuizOption(event) {
+      if (state.view !== "quiz") return false;
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return false;
+      if (!/^[1-4]$/.test(event.key)) return false;
+      if (!$("explain").hidden) return false;
+      const index = Number(event.key) - 1;
+      const option = document.querySelectorAll("#options .option")[index];
+      if (!option || option.disabled || option.hidden) return false;
+      option.click();
+      return true;
+    }
+
+    function keyboardAskAi() {
+      if (state.view === "cards") return clickVisibleNav("aiExplainCard");
+      if (state.view === "quiz") return clickVisibleNav("aiExplainQuiz");
+      if (state.view === "essay") return clickVisibleNav("floatGradeEssay");
+      if (state.view === "cloze") return clickVisibleNav("aiExplainCloze");
+      return false;
     }
 
     function keyboardStep(direction) {
@@ -10068,6 +10093,15 @@ Key point: the diagram must contain both the model structure and the case-specif
     }
 
     document.addEventListener("keydown", event => {
+      if (keyboardEditingTarget(event)) return;
+      if (event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey && event.key.toLowerCase() === "a") {
+        if (keyboardAskAi()) event.preventDefault();
+        return;
+      }
+      if (keyboardChooseQuizOption(event)) {
+        event.preventDefault();
+        return;
+      }
       if (keyboardNavBlocked(event)) return;
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
       if (keyboardStep(event.key === "ArrowLeft" ? -1 : 1)) event.preventDefault();
