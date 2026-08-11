@@ -1058,6 +1058,7 @@
     }
 
     .drawing-board {
+      position: relative;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
@@ -1066,8 +1067,41 @@
       touch-action: none;
     }
 
+    .draw-text-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      touch-action: none;
+    }
+
+    .draw-text-box {
+      position: absolute;
+      max-width: min(280px, 80%);
+      padding: 5px 8px;
+      border: 1px solid #cbd8d8;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.92);
+      color: #111827;
+      font-weight: 800;
+      line-height: 1.22;
+      box-shadow: 0 5px 14px rgba(20, 28, 36, 0.10);
+      cursor: move;
+      user-select: none;
+      white-space: pre-line;
+      pointer-events: auto;
+      touch-action: none;
+    }
+
+    .draw-text-box.selected {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 2px rgba(18, 99, 107, 0.16), 0 7px 18px rgba(20, 28, 36, 0.14);
+    }
+
     #diagramCanvas {
       display: block;
+      position: relative;
+      z-index: 1;
       width: 100%;
       height: 340px;
       background: #fff;
@@ -2142,8 +2176,9 @@
                 </div>
                 <div class="drawing-board">
                   <canvas id="diagramCanvas" aria-label="Diagram drawing canvas"></canvas>
+                  <div id="drawTextLayer" class="draw-text-layer" aria-label="Draggable diagram text labels"></div>
                 </div>
-                <div class="drawing-help">用手指或鼠标画图；方框/箭头是拖拽生成，文字工具点画板放标签。AI 会优先解析画板；如果画板为空，才解析下面上传的照片。</div>
+                <div class="drawing-help">用手指或鼠标画图；方框/箭头是拖拽生成；文字工具点画板放可拖动标签。Ctrl/Cmd+Z 可撤销。AI 会优先解析画板；如果画板为空，才解析下面上传的照片。</div>
                 <details>
                   <summary>也可以上传纸面照片 / Upload photo instead</summary>
                   <input id="drawingUpload" type="file" accept="image/*" capture="environment">
@@ -6130,6 +6165,10 @@ Explanation: The drawing should show connected value chains across firms, not on
       initialized: false,
       itemId: "",
       undo: [],
+      textBoxes: [],
+      activeTextId: "",
+      draggingText: null,
+      nextTextId: 1,
       preview: null,
       start: null,
       last: null
@@ -8537,6 +8576,85 @@ Key point: the diagram must contain both the model structure and the case-specif
       ctx.restore();
     }
 
+    function cloneTextBoxes(boxes = drawState.textBoxes) {
+      return (boxes || []).map(box => ({
+        ...box,
+        lines: [...(box.lines || [])]
+      }));
+    }
+
+    function currentDrawingSnapshot() {
+      const canvas = $("diagramCanvas");
+      return {
+        canvas: canvas && canvas.width && canvas.height ? canvas.toDataURL("image/png") : "",
+        dirty: drawState.dirty,
+        textBoxes: cloneTextBoxes()
+      };
+    }
+
+    function pushDrawingUndo() {
+      drawState.undo.push(currentDrawingSnapshot());
+      if (drawState.undo.length > 30) drawState.undo.shift();
+    }
+
+    function drawTextBoxOnContext(ctx, box) {
+      const lines = (box.lines || []).filter(Boolean);
+      if (!lines.length) return;
+      const padding = 6;
+      const fontSize = Number(box.fontSize || 16);
+      const lineHeight = Number(box.lineHeight || fontSize * 1.22);
+      ctx.save();
+      ctx.font = `800 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+      const width = Math.max(...lines.map(line => ctx.measureText(line).width), 24) + padding * 2;
+      const height = lines.length * lineHeight + padding * 2;
+      ctx.fillStyle = "rgba(255,255,255,0.92)";
+      ctx.strokeStyle = "#cbd8d8";
+      ctx.lineWidth = 1;
+      ctx.fillRect(box.x, box.y, width, height);
+      ctx.strokeRect(box.x, box.y, width, height);
+      ctx.fillStyle = box.color || "#111827";
+      lines.forEach((line, index) => ctx.fillText(line, box.x + padding, box.y + padding + fontSize + index * lineHeight));
+      ctx.restore();
+    }
+
+    function renderTextBoxes() {
+      const layer = $("drawTextLayer");
+      if (!layer) return;
+      layer.innerHTML = "";
+      drawState.textBoxes.forEach(box => {
+        const node = document.createElement("div");
+        node.className = `draw-text-box${box.id === drawState.activeTextId ? " selected" : ""}`;
+        node.dataset.textId = box.id;
+        node.style.left = `${box.x}px`;
+        node.style.top = `${box.y}px`;
+        node.style.color = box.color || "#111827";
+        node.style.fontSize = `${box.fontSize || 16}px`;
+        node.textContent = (box.lines || []).join("\n");
+        layer.appendChild(node);
+      });
+    }
+
+    function drawingBoardLooksBlank() {
+      return canvasLooksBlank() && drawState.textBoxes.length === 0;
+    }
+
+    function updateDrawingDirty() {
+      drawState.dirty = !drawingBoardLooksBlank();
+    }
+
+    function restoreDrawingSnapshot(snapshot) {
+      if (!snapshot) return;
+      drawState.textBoxes = cloneTextBoxes(snapshot.textBoxes || []);
+      drawState.activeTextId = "";
+      drawState.draggingText = null;
+      renderTextBoxes();
+      if (snapshot.canvas) restoreCanvasDataUrl(snapshot.canvas, false);
+      setTimeout(() => {
+        drawState.dirty = Boolean(snapshot.dirty) || !drawingBoardLooksBlank();
+        $("drawingStatus").textContent = "已撤销上一步。";
+      }, 40);
+    }
+
     function restoreCanvasDataUrl(dataUrl, markDirty = true) {
       const canvas = $("diagramCanvas");
       if (!canvas || !dataUrl) return;
@@ -8548,7 +8666,7 @@ Key point: the diagram must contain both the model structure and the case-specif
         ctx.clearRect(0, 0, width, height);
         paintCanvasBackground(ctx);
         ctx.drawImage(img, 0, 0, width, height);
-        drawState.dirty = markDirty && !canvasLooksBlank();
+        drawState.dirty = markDirty && !drawingBoardLooksBlank();
       };
       img.src = dataUrl;
     }
@@ -8588,10 +8706,7 @@ Key point: the diagram must contain both the model structure and the case-specif
     }
 
     function pushCanvasUndo() {
-      const canvas = $("diagramCanvas");
-      if (!canvas || !canvas.width || !canvas.height) return;
-      drawState.undo.push(canvas.toDataURL("image/png"));
-      if (drawState.undo.length > 24) drawState.undo.shift();
+      pushDrawingUndo();
     }
 
     function setDrawTool(tool) {
@@ -8600,7 +8715,7 @@ Key point: the diagram must contain both the model structure and the case-specif
         button.classList.toggle("active", button.dataset.drawTool === tool);
       });
       const message = tool === "text"
-        ? "文字工具：在输入框写标签，再点画板放置。"
+        ? "文字工具：在输入框写标签，再点画板放置可拖动文字框。"
         : tool === "box"
           ? "方框工具：按住拖拽生成矩形框。"
           : tool === "arrow"
@@ -8660,8 +8775,6 @@ Key point: the diagram must contain both the model structure and the case-specif
     }
 
     function drawTextAt(point) {
-      const canvas = $("diagramCanvas");
-      const ctx = canvas.getContext("2d");
       const raw = $("drawTextValue").value.trim();
       if (!raw) {
         $("drawingStatus").textContent = "先在文字框里写 label，再点画板放置。";
@@ -8669,21 +8782,70 @@ Key point: the diagram must contain both the model structure and the case-specif
       }
       const lines = raw.split(/\n+/).map(line => line.trim()).filter(Boolean).slice(0, 4);
       const fontSize = Math.max(14, Math.min(26, Number($("drawSize").value || 4) * 3.5));
-      ctx.save();
-      ctx.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
-      const padding = 6;
-      const lineHeight = fontSize * 1.25;
-      const width = Math.max(...lines.map(line => ctx.measureText(line).width), 20) + padding * 2;
-      const height = lines.length * lineHeight + padding * 2;
-      ctx.fillStyle = "rgba(255,255,255,0.88)";
-      ctx.strokeStyle = "#d8e2e2";
-      ctx.lineWidth = 1;
-      ctx.fillRect(point.x - padding, point.y - fontSize, width, height);
-      ctx.strokeRect(point.x - padding, point.y - fontSize, width, height);
-      ctx.fillStyle = $("drawColor").value || "#111827";
-      lines.forEach((line, index) => ctx.fillText(line, point.x, point.y + index * lineHeight));
-      ctx.restore();
+      const box = {
+        id: `text-${drawState.nextTextId++}`,
+        x: Math.max(4, point.x - 6),
+        y: Math.max(4, point.y - fontSize - 6),
+        lines,
+        color: $("drawColor").value || "#111827",
+        fontSize,
+        lineHeight: fontSize * 1.22
+      };
+      drawState.textBoxes.push(box);
+      drawState.activeTextId = box.id;
+      renderTextBoxes();
       return true;
+    }
+
+    function textBoxPointerDown(event) {
+      const node = event.target.closest?.(".draw-text-box");
+      if (!node) return;
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      const box = drawState.textBoxes.find(item => item.id === node.dataset.textId);
+      if (!box) return;
+      event.preventDefault();
+      event.stopPropagation();
+      pushDrawingUndo();
+      const point = canvasPoint(event);
+      drawState.activeTextId = box.id;
+      drawState.draggingText = {
+        id: box.id,
+        offsetX: point.x - box.x,
+        offsetY: point.y - box.y
+      };
+      renderTextBoxes();
+      const activeNode = document.querySelector(`.draw-text-box[data-text-id="${box.id}"]`);
+      activeNode?.setPointerCapture?.(event.pointerId);
+      $("drawingStatus").textContent = "正在移动文字框；松手后可用 Ctrl/Cmd+Z 撤销。";
+    }
+
+    function textBoxPointerMove(event) {
+      if (!drawState.draggingText) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const box = drawState.textBoxes.find(item => item.id === drawState.draggingText.id);
+      if (!box) return;
+      const point = canvasPoint(event);
+      const {width, height} = canvasCssSize();
+      box.x = Math.max(4, Math.min(width - 24, point.x - drawState.draggingText.offsetX));
+      box.y = Math.max(4, Math.min(height - 24, point.y - drawState.draggingText.offsetY));
+      const node = document.querySelector(`.draw-text-box[data-text-id="${box.id}"]`);
+      if (node) {
+        node.style.left = `${box.x}px`;
+        node.style.top = `${box.y}px`;
+      }
+      drawState.dirty = true;
+    }
+
+    function textBoxPointerUp(event) {
+      if (!drawState.draggingText) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const node = document.querySelector(`.draw-text-box[data-text-id="${drawState.draggingText.id}"]`);
+      node?.releasePointerCapture?.(event.pointerId);
+      drawState.draggingText = null;
+      updateDrawingDirty();
+      $("drawingStatus").textContent = "文字框已移动。";
     }
 
     function canvasPointerDown(event) {
@@ -8699,7 +8861,7 @@ Key point: the diagram must contain both the model structure and the case-specif
         pushCanvasUndo();
         if (drawTextAt(point)) {
           drawState.dirty = true;
-          $("drawingStatus").textContent = "文字标签已放到画板。";
+          $("drawingStatus").textContent = "文字标签已放到画板，可直接拖动调整位置。";
         } else {
           drawState.undo.pop();
         }
@@ -8756,7 +8918,7 @@ Key point: the diagram must contain both the model structure and the case-specif
       drawState.start = null;
       drawState.last = null;
       $("diagramCanvas").releasePointerCapture?.(event.pointerId);
-      drawState.dirty = !canvasLooksBlank();
+      updateDrawingDirty();
     }
 
     function clearDrawingCanvas(push = true) {
@@ -8768,6 +8930,10 @@ Key point: the diagram must contain both the model structure and the case-specif
       const {width, height} = canvasCssSize();
       ctx.clearRect(0, 0, width, height);
       paintCanvasBackground(ctx);
+      drawState.textBoxes = [];
+      drawState.activeTextId = "";
+      drawState.draggingText = null;
+      renderTextBoxes();
       drawState.dirty = false;
       drawState.preview = null;
       if (push) $("drawingStatus").textContent = "画板已清空。";
@@ -8776,14 +8942,10 @@ Key point: the diagram must contain both the model structure and the case-specif
     function undoDrawingCanvas() {
       const previous = drawState.undo.pop();
       if (!previous) {
-        $("drawingStatus").textContent = "没有可撤销的画笔操作。";
+        $("drawingStatus").textContent = "没有可撤销的画板操作。";
         return;
       }
-      restoreCanvasDataUrl(previous, true);
-      setTimeout(() => {
-        drawState.dirty = !canvasLooksBlank();
-        $("drawingStatus").textContent = "已撤销上一步。";
-      }, 30);
+      restoreDrawingSnapshot(previous);
     }
 
     function canvasToImageDataUrl() {
@@ -8796,12 +8958,17 @@ Key point: the diagram must contain both the model structure and the case-specif
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
       ctx.drawImage(canvas, 0, 0);
+      const dpr = Number(canvas.dataset.dpr || 1);
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      drawState.textBoxes.forEach(box => drawTextBoxOnContext(ctx, box));
+      ctx.restore();
       return exportCanvas.toDataURL("image/jpeg", 0.88);
     }
 
     async function currentDrawingImageDataUrl() {
       resizeDrawingCanvas(true);
-      if (drawState.dirty && !canvasLooksBlank()) {
+      if (drawState.dirty && !drawingBoardLooksBlank()) {
         return {imageUrl: canvasToImageDataUrl(), label: "in-page diagram board"};
       }
       const file = $("drawingUpload").files?.[0];
@@ -8817,10 +8984,30 @@ Key point: the diagram must contain both the model structure and the case-specif
       canvas.addEventListener("pointermove", canvasPointerMove);
       canvas.addEventListener("pointerup", canvasPointerUp);
       canvas.addEventListener("pointercancel", canvasPointerUp);
+      $("drawTextLayer").addEventListener("pointerdown", textBoxPointerDown);
+      $("drawTextLayer").addEventListener("pointermove", textBoxPointerMove);
+      $("drawTextLayer").addEventListener("pointerup", textBoxPointerUp);
+      $("drawTextLayer").addEventListener("pointercancel", textBoxPointerUp);
+      document.addEventListener("pointermove", textBoxPointerMove);
+      document.addEventListener("pointerup", textBoxPointerUp);
+      document.addEventListener("pointercancel", textBoxPointerUp);
       document.querySelectorAll("[data-draw-tool]").forEach(button => {
         button.onclick = () => setDrawTool(button.dataset.drawTool);
       });
-      $("drawTextQuick").onclick = () => setDrawTool("text");
+      $("drawTextQuick").onclick = () => {
+        setDrawTool("text");
+        const canvas = $("diagramCanvas");
+        if (!$("drawTextValue").value.trim() || !canvas) return;
+        resizeDrawingCanvas(true);
+        pushDrawingUndo();
+        const {width, height} = canvasCssSize();
+        if (drawTextAt({x: width / 2 - 70, y: height / 2})) {
+          drawState.dirty = true;
+          $("drawingStatus").textContent = "文字标签已放到画板，可直接拖动调整位置。";
+        } else {
+          drawState.undo.pop();
+        }
+      };
       $("undoCanvas").onclick = undoDrawingCanvas;
       $("clearCanvas").onclick = () => clearDrawingCanvas(true);
       window.addEventListener("resize", () => {
@@ -8835,6 +9022,9 @@ Key point: the diagram must contain both the model structure and the case-specif
         if (drawState.itemId !== item.id) {
           drawState.itemId = item.id;
           drawState.undo = [];
+          drawState.nextTextId = 1;
+          drawState.activeTextId = "";
+          drawState.draggingText = null;
           clearDrawingCanvas(false);
         }
       });
@@ -10191,6 +10381,13 @@ Key point: the diagram must contain both the model structure and the case-specif
     document.addEventListener("keydown", event => {
       if (event.key === "Escape" && !$("apiDrawer").hidden) setApiDrawer(false);
       if (event.key === "Escape" && !$("calcDrawer").hidden) setCalcDrawer(false);
+      const target = event.target;
+      const tag = target?.tagName;
+      const editingText = target?.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(tag);
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "z" && !$("drawingPanel").hidden && !editingText) {
+        event.preventDefault();
+        undoDrawingCanvas();
+      }
     });
 
     document.querySelectorAll(".tabs button").forEach(btn => {
